@@ -50,6 +50,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -64,6 +65,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   api:
     image: *api-image
@@ -101,6 +103,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   stratum:
     image: *stratum-image
@@ -118,6 +121,7 @@ services:
       - RPC_USER=forge
       - RPC_PASSWORD=${NODE_RPC_PASSWORD:-changeme}
       - POOL_ADDRESS=${POOL_ADDRESS:-}
+      - POOL_FEE=${POOL_FEE:-1.0}
     networks:
       - forge_network
     healthcheck:
@@ -140,6 +144,12 @@ services:
       - API_URL=http://api:8080
     networks:
       - forge_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 networks:
   forge_network:

@@ -4,7 +4,7 @@
 pool:
   name: "Forge Pool"
   address: "${POOL_ADDRESS}"
-  fee: 1.0
+  fee: ${POOL_FEE}
 
 stratum:
   host: "0.0.0.0"
