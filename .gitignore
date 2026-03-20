@@ -1,0 +1,22 @@
+# Environment files
+.env
+.env.local
+
+# Data directories
+data/
+node/
+postgres/
+redis/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+*.log

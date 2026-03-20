@@ -1,0 +1,126 @@
+version: "3.7"
+
+x-images:
+  node: &node-image ${IMAGE_REGISTRY:-ghcr.io/bch2}/forge-pool-node:${VERSION:-latest}
+  api: &api-image ${IMAGE_REGISTRY:-ghcr.io/bch2}/forge-pool-api:${VERSION:-latest}
+  stratum: &stratum-image ${IMAGE_REGISTRY:-ghcr.io/bch2}/forge-pool-stratum:${VERSION:-latest}
+  web: &web-image ${IMAGE_REGISTRY:-ghcr.io/bch2}/forge-pool-web:${VERSION:-latest}
+
+services:
+  node:
+    image: *node-image
+    container_name: forge-node
+    restart: unless-stopped
+    volumes:
+      - ${APP_DATA_DIR}/node:/root/.bch2
+    command:
+      - -printtoconsole
+      - -prune=1000
+      - -server=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=forge
+      - -rpcpassword=${NODE_RPC_PASSWORD}
+    networks:
+      - forge_network
+    healthcheck:
+      test: ["CMD", "bitcoincashII-cli", "-rpcuser=forge", "-rpcpassword=${NODE_RPC_PASSWORD}", "getblockchaininfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: forge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: forge
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: forgepool
+    volumes:
+      - ${APP_DATA_DIR}/postgres:/var/lib/postgresql/data
+    networks:
+      - forge_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forge -d forgepool"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: forge-redis
+    restart: unless-stopped
+    volumes:
+      - ${APP_DATA_DIR}/redis:/data
+    networks:
+      - forge_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: *api-image
+    container_name: forge-api
+    restart: unless-stopped
+    depends_on:
+      node:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=forge
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=forgepool
+      - REDIS_URL=redis://redis:6379
+      - RPC_HOST=node
+      - RPC_PORT=8332
+      - RPC_USER=forge
+      - RPC_PASSWORD=${NODE_RPC_PASSWORD}
+      - POOL_NAME=${POOL_NAME:-My Forge Pool}
+      - POOL_FEE=${POOL_FEE:-1.0}
+      - MIN_PAYOUT=${MIN_PAYOUT:-5}
+    networks:
+      - forge_network
+
+  stratum:
+    image: *stratum-image
+    container_name: forge-stratum
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${STRATUM_PORT:-3333}:3333"
+    environment:
+      - API_URL=http://api:8080
+      - RPC_HOST=node
+      - RPC_PORT=8332
+      - RPC_USER=forge
+      - RPC_PASSWORD=${NODE_RPC_PASSWORD}
+      - POOL_ADDRESS=${POOL_ADDRESS}
+    networks:
+      - forge_network
+
+  web:
+    image: *web-image
+    container_name: forge-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${APP_PORT:-3080}:80"
+    environment:
+      - API_URL=http://api:8080
+    networks:
+      - forge_network
+
+networks:
+  forge_network:
+    driver: bridge
