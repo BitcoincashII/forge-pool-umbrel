@@ -1,18 +1,13 @@
-FROM golang:1.21-alpine AS builder
+FROM ubuntu:22.04
 
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /stratum ./cmd/stratum
-
-FROM alpine:3.19
-
-RUN apk add --no-cache ca-certificates tzdata
-
-COPY --from=builder /stratum /usr/local/bin/stratum
-COPY configs/config.yaml /etc/forge/config.yaml
+COPY stratum /usr/local/bin/stratum
+COPY config.yaml /etc/forge/config.yaml
+RUN chmod +x /usr/local/bin/stratum
 
 EXPOSE 3333
 

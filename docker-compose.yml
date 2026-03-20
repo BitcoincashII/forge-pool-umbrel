@@ -1,10 +1,10 @@
 version: "3.7"
 
 x-images:
-  node: &node-image ${IMAGE_REGISTRY:-ghcr.io/bch2}/forge-pool-node:${VERSION:-latest}
-  api: &api-image ${IMAGE_REGISTRY:-ghcr.io/bch2}/forge-pool-api:${VERSION:-latest}
-  stratum: &stratum-image ${IMAGE_REGISTRY:-ghcr.io/bch2}/forge-pool-stratum:${VERSION:-latest}
-  web: &web-image ${IMAGE_REGISTRY:-ghcr.io/bch2}/forge-pool-web:${VERSION:-latest}
+  node: &node-image ghcr.io/bitcoincashii/forge-pool-node:${VERSION:-latest}
+  api: &api-image ghcr.io/bitcoincashii/forge-pool-api:${VERSION:-latest}
+  stratum: &stratum-image ghcr.io/bitcoincashii/forge-pool-stratum:${VERSION:-latest}
+  web: &web-image ghcr.io/bitcoincashii/forge-pool-web:${VERSION:-latest}
 
 services:
   node:

@@ -1,17 +1,12 @@
-FROM golang:1.21-alpine AS builder
+FROM ubuntu:22.04
 
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /api ./cmd/api
-
-FROM alpine:3.19
-
-RUN apk add --no-cache ca-certificates tzdata
-
-COPY --from=builder /api /usr/local/bin/api
+COPY api /usr/local/bin/api
+RUN chmod +x /usr/local/bin/api
 
 EXPOSE 8080
 
