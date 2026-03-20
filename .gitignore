@@ -2,11 +2,11 @@
 .env
 .env.local
 
-# Data directories
-data/
-node/
-postgres/
-redis/
+# Data directories (runtime data, not source)
+/data/
+/node/
+/postgres/
+/redis/
 
 # OS files
 .DS_Store
