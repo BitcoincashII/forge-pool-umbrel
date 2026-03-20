@@ -40,6 +40,12 @@ cd forge-pool-umbrel
 
 # Copy and configure environment
 cp .env.example .env
+
+# Generate secure passwords
+echo "NODE_RPC_PASSWORD=$(openssl rand -hex 32)" >> .env
+echo "DB_PASSWORD=$(openssl rand -hex 32)" >> .env
+
+# Set your pool address
 nano .env  # Set your POOL_ADDRESS
 
 # Start all services

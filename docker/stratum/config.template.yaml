@@ -20,7 +20,7 @@ stratum:
 
 node:
   host: "${RPC_HOST}"
-  port: ${RPC_PORT}
+  port: "${RPC_PORT}"
   user: "${RPC_USER}"
   password: "${RPC_PASSWORD}"
 

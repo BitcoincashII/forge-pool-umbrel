@@ -4,6 +4,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     tzdata \
     gettext-base \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 COPY stratum /usr/local/bin/stratum
