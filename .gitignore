@@ -20,3 +20,8 @@ Thumbs.db
 
 # Build artifacts
 *.log
+
+# Binaries (pre-built images are on GHCR)
+docker/node/bitcoincashII*
+docker/api/api
+docker/stratum/stratum
