@@ -431,16 +431,25 @@ func main() {
 		ServerName:         "main",
 	}
 
-	// Build RPC URL from config
-	nodeHost := config.GetString("node.host")
-	nodePort := config.GetInt("node.port")
-	nodeSSL := config.GetBool("node.use_ssl")
+	// Build RPC URL from environment or config
+	nodeHost := os.Getenv("RPC_HOST")
+	if nodeHost == "" {
+		nodeHost = config.GetString("node.host")
+	}
 	if nodeHost == "" {
 		nodeHost = "127.0.0.1"
 	}
-	if nodePort == 0 {
-		nodePort = 8342
+	nodePort := 0
+	if p := os.Getenv("RPC_PORT"); p != "" {
+		nodePort, _ = strconv.Atoi(p)
 	}
+	if nodePort == 0 {
+		nodePort = config.GetInt("node.port")
+	}
+	if nodePort == 0 {
+		nodePort = 8332
+	}
+	nodeSSL := config.GetBool("node.use_ssl")
 	protocol := "http"
 	if nodeSSL {
 		protocol = "https"
