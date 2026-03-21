@@ -314,6 +314,51 @@ func rpcCall(url, method string, params []interface{}) (interface{}, error) {
 
 
 // bitsToDifficulty converts compact "bits" from block template to difficulty
+// NodeSyncInfo holds blockchain sync status
+type NodeSyncInfo struct {
+	Blocks   int64
+	Headers  int64
+	Progress float64
+	Synced   bool
+}
+
+// checkNodeSync verifies the node is synced and ready for mining
+func checkNodeSync(rpcURL string) (*NodeSyncInfo, error) {
+	result, err := rpcCall(rpcURL, "getblockchaininfo", []interface{}{})
+	if err != nil {
+		return nil, fmt.Errorf("getblockchaininfo failed: %w", err)
+	}
+
+	info, ok := result.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected response type: %T", result)
+	}
+
+	blocks := int64(0)
+	headers := int64(0)
+	progress := 0.0
+
+	if b, ok := info["blocks"].(float64); ok {
+		blocks = int64(b)
+	}
+	if h, ok := info["headers"].(float64); ok {
+		headers = int64(h)
+	}
+	if p, ok := info["verificationprogress"].(float64); ok {
+		progress = p
+	}
+
+	// Node is synced if blocks == headers and progress > 99.9%
+	synced := blocks > 0 && blocks >= headers-1 && progress > 0.999
+
+	return &NodeSyncInfo{
+		Blocks:   blocks,
+		Headers:  headers,
+		Progress: progress,
+		Synced:   synced,
+	}, nil
+}
+
 func bitsToDifficulty(bitsHex string) float64 {
 	bits, err := strconv.ParseUint(bitsHex, 16, 32)
 	if err != nil || bits == 0 {
@@ -587,6 +632,8 @@ func main() {
 
 		var lastHeight int64
 		var lastJobTime time.Time
+		var nodeReady bool
+		var lastSyncLog time.Time
 
 		for {
 			select {
@@ -594,8 +641,36 @@ func main() {
 				logger.Info("Job broadcast loop shutting down")
 				return
 			case <-ticker.C:
+				// Check if node is synced before attempting block templates
+				if !nodeReady {
+					syncInfo, err := checkNodeSync(rpcURL)
+					if err != nil {
+						if time.Since(lastSyncLog) > 30*time.Second {
+							logger.Warn("⏳ Waiting for node connection...", zap.Error(err))
+							lastSyncLog = time.Now()
+						}
+						continue
+					}
+					if !syncInfo.Synced {
+						if time.Since(lastSyncLog) > 30*time.Second {
+							logger.Info("⏳ Node syncing...",
+								zap.Int64("blocks", syncInfo.Blocks),
+								zap.Int64("headers", syncInfo.Headers),
+								zap.Float64("progress", syncInfo.Progress*100))
+							lastSyncLog = time.Now()
+						}
+						continue
+					}
+					nodeReady = true
+					logger.Info("✅ Node synced and ready!", zap.Int64("height", syncInfo.Blocks))
+				}
+
 				template, err := jobManager.GetBlockTemplate()
 				if err != nil {
+					// Check if node became unsynced
+					if strings.Contains(err.Error(), "connection") || strings.Contains(err.Error(), "reset") {
+						nodeReady = false
+					}
 					logger.Error("Failed to get block template", zap.Error(err))
 					continue
 				}
