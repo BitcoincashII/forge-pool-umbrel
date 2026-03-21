@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bch2/forge-pool/internal/config"
 	"github.com/bch2/forge-pool/internal/stats"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -37,6 +38,7 @@ var (
 	stratumURL       string
 	internalAPIToken string
 	halvingInterval  int64 = 210000 // BCH2 halving interval, configurable via HALVING_INTERVAL env
+	dataDir          string         // Data directory for persistent config
 
 	// Block cache to avoid N+1 RPC queries
 	blockCache   = make(map[int64]*CachedBlock)
@@ -222,6 +224,11 @@ func init() {
 			halvingInterval = h
 		}
 	}
+	// Data directory for persistent config
+	dataDir = os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = "/data"
+	}
 }
 
 type MinerSetting struct {
@@ -330,6 +337,8 @@ func main() {
 	api.Get("/workers", getAllWorkers)
 	api.Get("/validate-address", validateAddress)
 	api.Get("/health", healthCheck)
+	api.Get("/pool/config", getPoolConfig)
+	api.Post("/pool/config", savePoolConfig)
 
 	// Prometheus-style metrics endpoint
 	app.Get("/metrics", func(c *fiber.Ctx) error {
@@ -449,6 +458,9 @@ pool_uptime_seconds %.0f
 	})
 
 	// Static HTML pages
+	app.Get("/settings", func(c *fiber.Ctx) error {
+		return c.SendFile("./web/dist/settings.html")
+	})
 	app.Get("/start", func(c *fiber.Ctx) error {
 		return c.SendFile("./web/dist/start.html")
 	})
@@ -1383,8 +1395,67 @@ func healthCheck(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"status":         status,
-		"db_connected":   dbConnected,
+		"status":          status,
+		"db_connected":    dbConnected,
 		"settings_loaded": settingsCount,
+	})
+}
+
+// getPoolConfig returns the current pool configuration
+func getPoolConfig(c *fiber.Ctx) error {
+	cfg, err := config.LoadConfig(dataDir)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to load config: " + err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"stratum_port": cfg.StratumPort,
+		"pool_wallet":  cfg.PoolWallet,
+		"pool_name":    cfg.PoolName,
+		"pool_fee":     cfg.PoolFee,
+		"solo_fee":     cfg.SoloFee,
+		"min_payout":   cfg.MinPayout,
+		"updated_at":   cfg.UpdatedAt,
+	})
+}
+
+// savePoolConfig saves the pool configuration
+func savePoolConfig(c *fiber.Ctx) error {
+	var req struct {
+		StratumPort int     `json:"stratum_port"`
+		PoolWallet  string  `json:"pool_wallet"`
+		PoolName    string  `json:"pool_name"`
+		PoolFee     float64 `json:"pool_fee"`
+		SoloFee     float64 `json:"solo_fee"`
+		MinPayout   float64 `json:"min_payout"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	cfg := &config.PoolConfig{
+		StratumPort: req.StratumPort,
+		PoolWallet:  req.PoolWallet,
+		PoolName:    req.PoolName,
+		PoolFee:     req.PoolFee,
+		SoloFee:     req.SoloFee,
+		MinPayout:   req.MinPayout,
+		UpdatedAt:   time.Now(),
+	}
+
+	// Validate config
+	if err := config.ValidateConfig(cfg); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Save config
+	if err := config.SaveConfig(dataDir, cfg); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to save config: " + err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Configuration saved. Restart stratum service for port changes to take effect.",
 	})
 }
