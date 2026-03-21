@@ -1,18 +1,12 @@
-FROM ubuntu:22.04
+FROM alpine:3.19
 
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    tzdata \
-    gettext-base \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates tzdata curl netcat-openbsd
 
-COPY stratum /usr/local/bin/stratum
-COPY config.template.yaml /etc/forge/config.template.yaml
-COPY entrypoint.sh /entrypoint.sh
-
-RUN chmod +x /usr/local/bin/stratum /entrypoint.sh
+ARG VERSION=1.0.0
+RUN curl -L -o /usr/local/bin/stratum \
+    https://github.com/BitcoincashII/forge-pool-umbrel/releases/download/v${VERSION}/stratum && \
+    chmod +x /usr/local/bin/stratum
 
 EXPOSE 3333
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["stratum"]

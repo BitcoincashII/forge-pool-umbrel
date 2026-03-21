@@ -1,13 +1,11 @@
-FROM ubuntu:22.04
+FROM alpine:3.19
 
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    tzdata \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates tzdata curl
 
-COPY api /usr/local/bin/api
-RUN chmod +x /usr/local/bin/api
+ARG VERSION=1.0.0
+RUN curl -L -o /usr/local/bin/api \
+    https://github.com/BitcoincashII/forge-pool-umbrel/releases/download/v${VERSION}/api && \
+    chmod +x /usr/local/bin/api
 
 EXPOSE 8080
 

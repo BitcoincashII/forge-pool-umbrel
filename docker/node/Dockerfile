@@ -1,13 +1,21 @@
 FROM ubuntu:22.04
 
+ARG BCH2_VERSION=27.0.0
+
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY bitcoincashIId /usr/local/bin/
-COPY bitcoincashII-cli /usr/local/bin/
+# Download and extract BCH2 binaries from release
+RUN curl -L https://github.com/BitcoincashII/bitcoincashII-core/releases/download/v${BCH2_VERSION}/bitcoincashII-${BCH2_VERSION}-linux64.tar.gz | \
+    tar -xz -C /tmp && \
+    cp /tmp/bitcoincashII-${BCH2_VERSION}/bin/bitcoincashIId /usr/local/bin/ && \
+    cp /tmp/bitcoincashII-${BCH2_VERSION}/bin/bitcoincashII-cli /usr/local/bin/ && \
+    rm -rf /tmp/bitcoincashII-* && \
+    chmod +x /usr/local/bin/bitcoincashII*
 
-RUN chmod +x /usr/local/bin/bitcoincashII* && mkdir -p /root/.bch2
+RUN mkdir -p /root/.bch2
 
 EXPOSE 8332 8333
 
