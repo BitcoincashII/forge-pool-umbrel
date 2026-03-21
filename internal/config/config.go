@@ -48,6 +48,24 @@ func LoadConfig(dataDir string) (*PoolConfig, error) {
 		return GetDefaults(), nil
 	}
 
+	// Apply defaults for missing/zero values
+	defaults := GetDefaults()
+	if cfg.StratumPort == 0 {
+		cfg.StratumPort = defaults.StratumPort
+	}
+	if cfg.PoolName == "" {
+		cfg.PoolName = defaults.PoolName
+	}
+	if cfg.PoolFee == 0 {
+		cfg.PoolFee = defaults.PoolFee
+	}
+	if cfg.SoloFee == 0 {
+		cfg.SoloFee = defaults.SoloFee
+	}
+	if cfg.MinPayout == 0 {
+		cfg.MinPayout = defaults.MinPayout
+	}
+
 	return &cfg, nil
 }
 

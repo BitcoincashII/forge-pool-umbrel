@@ -1418,7 +1418,23 @@ func getNodeStatus(c *fiber.Ctx) error {
 	// Get blockchain info
 	infoResult, err := rpcCall("getblockchaininfo", []interface{}{})
 	if err != nil {
+		errStr := err.Error()
 		log.Printf("Node status check failed: %v (rpcURL=%s)", err, rpcURL)
+
+		// Check if node is likely syncing (connection refused = node starting/syncing)
+		// vs truly offline (host unreachable, timeout, etc)
+		if strings.Contains(errStr, "connection refused") ||
+			strings.Contains(errStr, "EOF") ||
+			strings.Contains(errStr, "connection reset") {
+			return c.JSON(fiber.Map{
+				"status":   "syncing",
+				"synced":   false,
+				"message":  "Node is starting up...",
+				"progress": 0.01,
+				"rpc_url":  rpcURL,
+			})
+		}
+
 		return c.JSON(fiber.Map{
 			"status":   "offline",
 			"synced":   false,
