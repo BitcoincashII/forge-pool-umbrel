@@ -38,15 +38,14 @@ func LoadConfig(dataDir string) (*PoolConfig, error) {
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return GetDefaults(), nil
-		}
-		return nil, err
+		// Return defaults on any read error (not found, permissions, etc)
+		return GetDefaults(), nil
 	}
 
 	var cfg PoolConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, err
+		// Return defaults if file is corrupted
+		return GetDefaults(), nil
 	}
 
 	return &cfg, nil
