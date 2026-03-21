@@ -128,10 +128,17 @@ func createTablesIfNotExist() error {
 		txid VARCHAR(64),
 		confirmed BOOLEAN DEFAULT FALSE,
 		is_solo BOOLEAN DEFAULT FALSE,
-		created_at TIMESTAMP DEFAULT NOW()
+		created_at TIMESTAMP DEFAULT NOW(),
+		paid_at TIMESTAMP
 	);
 	CREATE INDEX IF NOT EXISTS idx_payouts_miner ON payouts(miner_address);
 	CREATE INDEX IF NOT EXISTS idx_payouts_confirmed ON payouts(confirmed);
+
+	-- Migration: add paid_at column if missing (for existing databases)
+	DO $$ BEGIN
+		ALTER TABLE payouts ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP;
+	EXCEPTION WHEN others THEN NULL;
+	END $$;
 	`
 	_, err := db.Exec(schema)
 	return err
