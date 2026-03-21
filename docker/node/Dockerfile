@@ -5,6 +5,11 @@ ARG BCH2_VERSION=27.0.0
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
+    libminiupnpc17 \
+    libevent-2.1-7 \
+    libzmq5 \
+    libboost-filesystem1.74.0 \
+    libboost-thread1.74.0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and extract BCH2 binaries from release
