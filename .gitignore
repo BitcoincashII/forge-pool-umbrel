@@ -25,3 +25,7 @@ Thumbs.db
 docker/node/bitcoincashII*
 docker/api/api
 docker/stratum/stratum
+
+# Compiled binaries
+api
+stratum
