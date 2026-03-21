@@ -856,7 +856,7 @@ func GetMinersListDB(limit int) []MinerListEntry {
 	}
 	defer rows.Close()
 
-	var miners []MinerListEntry
+	miners := make([]MinerListEntry, 0)
 	for rows.Next() {
 		var m MinerListEntry
 		if err := rows.Scan(&m.Address, &m.SoloMining); err != nil {
