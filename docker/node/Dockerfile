@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
     libminiupnpc17 \
+    libnatpmp1 \
     libevent-2.1-7 \
     libzmq5 \
     libboost-filesystem1.74.0 \
