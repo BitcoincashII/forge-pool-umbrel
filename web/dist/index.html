@@ -495,7 +495,11 @@
                     el.title = data.message;
                 } else if (data.status === 'syncing') {
                     el.classList.add('syncing');
-                    label.textContent = Math.floor(data.progress * 100) + '% synced';
+                    if (data.progress >= 0) {
+                        label.textContent = Math.floor(data.progress * 100) + '% synced';
+                    } else {
+                        label.textContent = 'Syncing...';
+                    }
                     el.title = data.message;
                 } else {
                     el.classList.add('offline');

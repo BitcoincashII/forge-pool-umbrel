@@ -1431,7 +1431,7 @@ func getNodeStatus(c *fiber.Ctx) error {
 		errStr := err.Error()
 		log.Printf("Node status check failed: %v (rpcURL=%s)", err, rpcURL)
 
-		// Check if node is likely syncing (connection refused = node starting/syncing)
+		// Check if node is likely syncing (connection refused/reset = node busy syncing)
 		// vs truly offline (host unreachable, timeout, etc)
 		if strings.Contains(errStr, "connection refused") ||
 			strings.Contains(errStr, "EOF") ||
@@ -1439,8 +1439,8 @@ func getNodeStatus(c *fiber.Ctx) error {
 			return c.JSON(fiber.Map{
 				"status":   "syncing",
 				"synced":   false,
-				"message":  "Node is starting up...",
-				"progress": 0.01,
+				"message":  "Node syncing (RPC busy)...",
+				"progress": -1, // -1 indicates unknown progress
 				"rpc_url":  rpcURL,
 			})
 		}
