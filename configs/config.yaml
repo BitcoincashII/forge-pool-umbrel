@@ -1,0 +1,31 @@
+# Forge Pool Umbrel Configuration
+
+stratum:
+  host: "0.0.0.0"
+  port: 3333
+  max_connections: 10000
+  ban_duration: "10m"
+  max_shares_per_second: 100
+  extranonce1_size: 4
+  extranonce2_size: 4
+  vardiff:
+    enabled: true
+    min_diff: 32768
+    rental_min_diff: 500000
+    rental_max_diff: 50000000
+    max_diff: 1000000000
+    target_time: 10
+    retarget_time: 60
+
+node:
+  host: "node"
+  port: 8332
+  use_ssl: false
+
+pool:
+  address: ""
+  fee: 1.0
+  solo_fee: 0.5
+  block_reward: 50.0
+  min_payout: 5.0
+  pplns_window: 100000

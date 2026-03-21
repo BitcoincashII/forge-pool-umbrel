@@ -9,6 +9,8 @@ RUN CGO_ENABLED=0 go build -o stratum ./cmd/stratum
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
 COPY --from=builder /build/stratum /usr/local/bin/stratum
+COPY configs/config.yaml /app/configs/config.yaml
 EXPOSE 3333
-ENTRYPOINT ["stratum"]
+ENTRYPOINT ["stratum", "-config", "/app/configs/config.yaml"]
