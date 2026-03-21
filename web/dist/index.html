@@ -383,7 +383,6 @@
                 document.getElementById('poolHashrate').textContent = data.hashrate || '--';
                 document.getElementById('poolMiners').textContent = data.miners || 0;
                 document.getElementById('poolBlocks').textContent = data.blocksFound || 0;
-                document.getElementById('uptime').textContent = data.uptime?.split('.')[0] || '--';
 
                 poolAddress = data.poolAddress || '';
                 const host = location.hostname === 'localhost' ? 'umbrel.local' : location.hostname;
