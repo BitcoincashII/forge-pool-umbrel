@@ -363,7 +363,13 @@
 
                 poolAddress = data.poolAddress || '';
                 const host = location.hostname === 'localhost' ? 'umbrel.local' : location.hostname;
-                document.getElementById('stratumUrl').textContent = 'stratum+tcp://' + host + ':3333';
+                // Fetch port from config
+                fetch(API + '/pool/config').then(r => r.json()).then(cfg => {
+                    const port = cfg.stratum_port || 3333;
+                    document.getElementById('stratumUrl').textContent = 'stratum+tcp://' + host + ':' + port;
+                }).catch(() => {
+                    document.getElementById('stratumUrl').textContent = 'stratum+tcp://' + host + ':3333';
+                });
             } catch (e) {
                 console.error('Failed to fetch stats:', e);
             }
