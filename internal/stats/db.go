@@ -831,6 +831,42 @@ func LoadAllMinerSettings() map[string]*MinerSettings {
 	return result
 }
 
+// MinerListEntry represents a miner in the list
+type MinerListEntry struct {
+	Address    string  `json:"address"`
+	SoloMining bool    `json:"solo_mining"`
+	Hashrate   float64 `json:"hashrate"`
+}
+
+// GetMinersListDB returns a list of miners from database with optional limit
+func GetMinersListDB(limit int) []MinerListEntry {
+	if db == nil {
+		return []MinerListEntry{}
+	}
+
+	query := `SELECT address, solo_mining FROM miners ORDER BY updated_at DESC`
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Printf("Error getting miners list: %v", err)
+		return []MinerListEntry{}
+	}
+	defer rows.Close()
+
+	var miners []MinerListEntry
+	for rows.Next() {
+		var m MinerListEntry
+		if err := rows.Scan(&m.Address, &m.SoloMining); err != nil {
+			continue
+		}
+		miners = append(miners, m)
+	}
+	return miners
+}
+
 // GetMinerPayoutsDB returns payout history from database
 func GetMinerPayoutsDB(minerID string) ([]PayoutRecord, int, float64) {
 	if db == nil {

@@ -335,6 +335,7 @@ func main() {
 	api := app.Group("/api/v1")
 	api.Get("/stats", getPoolStats)
 	api.Get("/blocks", getBlocksAPI)
+	api.Get("/miners", getMinersListAPI)
 	api.Get("/miners/:address", getMiner)
 	api.Get("/miners/:address/workers", getMinerWorkers)
 	api.Get("/miners/:address/payouts", getMinerPayouts)
@@ -841,6 +842,15 @@ func getBlocksAPI(c *fiber.Ctx) error {
 		"page":   data.Page,
 		"limit":  data.Limit,
 	})
+}
+
+func getMinersListAPI(c *fiber.Ctx) error {
+	limit := c.QueryInt("limit", 100)
+	if limit > 1000 {
+		limit = 1000
+	}
+	miners := stats.GetMinersListDB(limit)
+	return c.JSON(miners)
 }
 
 func getMiner(c *fiber.Ctx) error {
