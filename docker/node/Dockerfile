@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ARG BCH2_VERSION=27.0.0
 
@@ -7,10 +7,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     libminiupnpc17 \
     libnatpmp1 \
+    libevent-pthreads-2.1-7 \
     libevent-2.1-7 \
     libzmq5 \
-    libboost-filesystem1.74.0 \
-    libboost-thread1.74.0 \
+    libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and extract BCH2 binaries from release
