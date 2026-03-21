@@ -6,32 +6,14 @@ Self-hosted BCH2 mining pool for Umbrel.
 
 ### Option 1: Community App Store (Recommended)
 
-```bash
-# SSH into your Umbrel
-ssh umbrel@umbrel.local
+1. Open your Umbrel dashboard
+2. Go to **App Store** → **Community App Stores** (three dots menu)
+3. Add this URL: `https://github.com/BitcoincashII/umbrel-app-store`
+4. Find "Forge Pool" in the app store and click **Install**
 
-# Add the BCH2 community app store
-sudo ~/umbrel/scripts/repo add https://github.com/BitcoincashII/umbrel-app-store
+### Option 2: Standalone Docker Compose
 
-# Install Forge Pool
-sudo ~/umbrel/scripts/app install forge-pool
-```
-
-### Option 2: Direct Install from GitHub
-
-```bash
-# SSH into your Umbrel
-ssh umbrel@umbrel.local
-
-# Clone directly into Umbrel's app directory
-cd ~/umbrel/app-data
-git clone https://github.com/BitcoincashII/forge-pool-umbrel.git forge-pool
-
-# Install
-sudo ~/umbrel/scripts/app install forge-pool
-```
-
-### Option 3: Manual Docker Compose
+Run Forge Pool on any server (not just Umbrel):
 
 ```bash
 # Clone the repo
@@ -42,20 +24,20 @@ cd forge-pool-umbrel
 cp .env.example .env
 
 # Generate secure passwords
-echo "NODE_RPC_PASSWORD=$(openssl rand -hex 32)" >> .env
-echo "DB_PASSWORD=$(openssl rand -hex 32)" >> .env
+sed -i "s/NODE_RPC_PASSWORD=.*/NODE_RPC_PASSWORD=$(openssl rand -hex 32)/" .env
+sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$(openssl rand -hex 32)/" .env
 
-# Set your pool address
-nano .env  # Set your POOL_ADDRESS
+# Set your pool address (REQUIRED - edit this file)
+nano .env  # Set POOL_ADDRESS to your BCH2 address
 
 # Start all services
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Quick Start
 
 1. Install Forge Pool using one of the methods above
-2. Wait for the BCH2 node to sync (~5 minutes)
+2. Wait for the BCH2 node to sync (first sync takes 15-30 minutes)
 3. Open the web UI at `http://umbrel.local:3080`
 4. Point your miners to `stratum+tcp://umbrel.local:3333`
 
@@ -82,9 +64,11 @@ bitcoincashii:qr08krt...7gnl732fwz.rig1.solo  → Solo
 
 ## Configuration
 
+Edit `.env` or configure via Umbrel app settings:
+
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `POOL_ADDRESS` | (required) | Your BCH2 address for fees/rewards |
+| `POOL_ADDRESS` | (required) | Your BCH2 address for pool fees |
 | `POOL_NAME` | My Forge Pool | Pool name shown in UI |
 | `POOL_FEE` | 1.0 | PPLNS fee percentage |
 | `SOLO_FEE` | 0.5 | Solo mining fee percentage |
@@ -101,18 +85,10 @@ bitcoincashii:qr08krt...7gnl732fwz.rig1.solo  → Solo
 
 ## Data Storage
 
-All data stored in Umbrel's app data directory:
-- `node/` - BCH2 blockchain (pruned, ~100MB)
+All data stored in the app data directory:
+- `node/` - BCH2 blockchain (pruned, ~500MB)
 - `postgres/` - Pool database
 - `redis/` - Cache
-
-## Updating
-
-```bash
-cd ~/umbrel/app-data/forge-pool
-git pull
-sudo ~/umbrel/scripts/app restart forge-pool
-```
 
 ## Troubleshooting
 
@@ -126,17 +102,24 @@ docker logs forge-node
 - Check firewall: `sudo ufw allow 3333`
 
 **Pool shows 0 hashrate?**
-- Hashrate updates every 5 minutes after shares are submitted
+- Hashrate appears after miners submit shares
+- Stats update every 5 minutes
 
-## Releases
+**Check all container status:**
+```bash
+docker ps | grep forge
+```
 
-Pre-built Docker images are available at:
-- `ghcr.io/bitcoincashii/forge-pool-node`
-- `ghcr.io/bitcoincashii/forge-pool-api`
-- `ghcr.io/bitcoincashii/forge-pool-stratum`
-- `ghcr.io/bitcoincashii/forge-pool-web`
+## Building Images Locally
+
+To build the Docker images yourself instead of using pre-built images:
+
+```bash
+./build.sh
+```
 
 ## Support
 
 - Issues: https://github.com/BitcoincashII/forge-pool-umbrel/issues
 - Website: https://hashforge.bch2.org
+- Main Pool: https://hashforge.bch2.org (use this if you just want to mine without running your own pool)
