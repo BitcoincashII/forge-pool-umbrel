@@ -402,9 +402,18 @@ func main() {
 		logger.Fatal("Failed to load config", zap.Error(err))
 	}
 
+	// Check for user-configured port from pool config file
+	stratumPort := config.GetInt("stratum.port")
+	if dataDir := os.Getenv("DATA_DIR"); dataDir != "" {
+		if poolCfg, err := loadPoolConfig(dataDir); err == nil && poolCfg.StratumPort > 0 {
+			stratumPort = poolCfg.StratumPort
+			logger.Info("Using stratum port from user config", zap.Int("port", stratumPort))
+		}
+	}
+
 	serverConfig := &stratum.ServerConfig{
 		Host:               config.GetString("stratum.host"),
-		Port:               config.GetInt("stratum.port"),
+		Port:               stratumPort,
 		MaxConnections:     config.GetInt("stratum.max_connections"),
 		BanDuration:        config.GetDuration("stratum.ban_duration"),
 		MaxSharesPerSecond: config.GetInt("stratum.max_shares_per_second"),
@@ -694,6 +703,24 @@ func main() {
 		stratumBraiinsServer.Stop()
 	}
 	stratumServer.Stop()
+}
+
+// PoolConfig for reading user settings
+type PoolConfig struct {
+	StratumPort int `json:"stratum_port"`
+}
+
+func loadPoolConfig(dataDir string) (*PoolConfig, error) {
+	configPath := dataDir + "/config/pool-config.json"
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+	var cfg PoolConfig
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
 }
 
 func loadConfig(path string) (*viper.Viper, error) {
