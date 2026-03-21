@@ -337,6 +337,7 @@ func main() {
 	api.Get("/workers", getAllWorkers)
 	api.Get("/validate-address", validateAddress)
 	api.Get("/health", healthCheck)
+	api.Get("/node-status", getNodeStatus)
 	api.Get("/pool/config", getPoolConfig)
 	api.Post("/pool/config", savePoolConfig)
 
@@ -1398,6 +1399,59 @@ func healthCheck(c *fiber.Ctx) error {
 		"status":          status,
 		"db_connected":    dbConnected,
 		"settings_loaded": settingsCount,
+	})
+}
+
+// getNodeStatus returns the BCH2 node sync status for UI display
+func getNodeStatus(c *fiber.Ctx) error {
+	// Get blockchain info
+	infoResult, err := rpcCall("getblockchaininfo", []interface{}{})
+	if err != nil {
+		return c.JSON(fiber.Map{
+			"status":   "offline",
+			"synced":   false,
+			"message":  "Node not responding",
+			"progress": 0,
+		})
+	}
+
+	var info struct {
+		Chain                string  `json:"chain"`
+		Blocks               int64   `json:"blocks"`
+		Headers              int64   `json:"headers"`
+		VerificationProgress float64 `json:"verificationprogress"`
+		InitialBlockDownload bool    `json:"initialblockdownload"`
+	}
+	if err := json.Unmarshal(infoResult, &info); err != nil {
+		return c.JSON(fiber.Map{
+			"status":   "error",
+			"synced":   false,
+			"message":  "Invalid node response",
+			"progress": 0,
+		})
+	}
+
+	// Determine sync status
+	synced := info.Blocks > 0 && info.Blocks >= info.Headers-1 && info.VerificationProgress > 0.999
+	status := "syncing"
+	message := fmt.Sprintf("Syncing: %d/%d blocks (%.1f%%)", info.Blocks, info.Headers, info.VerificationProgress*100)
+
+	if synced {
+		status = "synced"
+		message = fmt.Sprintf("Synced at block %d", info.Blocks)
+	} else if info.InitialBlockDownload {
+		status = "syncing"
+		message = fmt.Sprintf("Initial sync: %.1f%% complete", info.VerificationProgress*100)
+	}
+
+	return c.JSON(fiber.Map{
+		"status":   status,
+		"synced":   synced,
+		"blocks":   info.Blocks,
+		"headers":  info.Headers,
+		"progress": info.VerificationProgress,
+		"message":  message,
+		"chain":    info.Chain,
 	})
 }
 

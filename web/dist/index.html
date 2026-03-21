@@ -61,10 +61,34 @@
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
+        .status-dot.syncing { background: #f1c40f; }
+        .status-dot.offline { background: var(--red); animation: none; }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        .node-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-dim);
+            padding: 4px 10px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            margin-left: auto;
+        }
+        .node-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+        .node-status.syncing .dot { background: #f1c40f; animation: pulse 1s infinite; }
+        .node-status.offline .dot { background: var(--red); }
+        .node-status .label { font-weight: 500; }
 
         .balance-card {
             background: linear-gradient(135deg, var(--green), var(--green-dark));
@@ -233,9 +257,9 @@
     <div class="header">
         <div class="logo">F</div>
         <h1>Forge Pool</h1>
-        <div class="status">
-            <div class="status-dot"></div>
-            <span id="uptime">--</span>
+        <div class="node-status" id="nodeStatus" title="BCH2 Node Status">
+            <div class="dot"></div>
+            <span class="label">Checking...</span>
         </div>
     </div>
 
@@ -458,13 +482,43 @@
             `).join('');
         }
 
+        async function fetchNodeStatus() {
+            try {
+                const res = await fetch(API + '/node-status');
+                const data = await res.json();
+                const el = document.getElementById('nodeStatus');
+                const label = el.querySelector('.label');
+
+                el.classList.remove('syncing', 'offline');
+                if (data.status === 'synced') {
+                    label.textContent = 'Block ' + data.blocks;
+                    el.title = data.message;
+                } else if (data.status === 'syncing') {
+                    el.classList.add('syncing');
+                    label.textContent = Math.floor(data.progress * 100) + '% synced';
+                    el.title = data.message;
+                } else {
+                    el.classList.add('offline');
+                    label.textContent = 'Node offline';
+                    el.title = data.message || 'BCH2 node is not responding';
+                }
+            } catch (e) {
+                const el = document.getElementById('nodeStatus');
+                el.classList.add('offline');
+                el.querySelector('.label').textContent = 'Offline';
+                el.title = 'Could not connect to pool API';
+            }
+        }
+
         // Initial load
         fetchStats();
         fetchMiner();
+        fetchNodeStatus();
 
-        // Refresh every 30 seconds
+        // Refresh every 30 seconds (stats/miner) and 10 seconds (node status)
         setInterval(fetchStats, 30000);
         setInterval(fetchMiner, 30000);
+        setInterval(fetchNodeStatus, 10000);
     </script>
 </body>
 </html>
