@@ -201,9 +201,18 @@ func addressMatches(a, b string) bool {
 
 func init() {
 	// Load configuration from environment variables
+	// Build RPC URL from RPC_HOST and RPC_PORT (like stratum does)
+	rpcHost := os.Getenv("RPC_HOST")
+	if rpcHost == "" {
+		rpcHost = "127.0.0.1"
+	}
+	rpcPort := os.Getenv("RPC_PORT")
+	if rpcPort == "" {
+		rpcPort = "8332"
+	}
 	rpcURL = os.Getenv("RPC_URL")
 	if rpcURL == "" {
-		rpcURL = "http://127.0.0.1:8342"
+		rpcURL = fmt.Sprintf("http://%s:%s", rpcHost, rpcPort)
 	}
 	rpcUser = os.Getenv("RPC_USER")
 	if rpcUser == "" {
