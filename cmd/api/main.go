@@ -214,6 +214,8 @@ func init() {
 	if rpcURL == "" {
 		rpcURL = fmt.Sprintf("http://%s:%s", rpcHost, rpcPort)
 	}
+	// Log RPC configuration for debugging
+	log.Printf("RPC configured: host=%s port=%s url=%s", rpcHost, rpcPort, rpcURL)
 	rpcUser = os.Getenv("RPC_USER")
 	if rpcUser == "" {
 		rpcUser = os.Getenv("FORGE_RPC_USER")
@@ -1416,11 +1418,13 @@ func getNodeStatus(c *fiber.Ctx) error {
 	// Get blockchain info
 	infoResult, err := rpcCall("getblockchaininfo", []interface{}{})
 	if err != nil {
+		log.Printf("Node status check failed: %v (rpcURL=%s)", err, rpcURL)
 		return c.JSON(fiber.Map{
 			"status":   "offline",
 			"synced":   false,
-			"message":  "Node not responding",
+			"message":  fmt.Sprintf("Node not responding: %v", err),
 			"progress": 0,
+			"rpc_url":  rpcURL,
 		})
 	}
 
