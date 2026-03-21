@@ -634,6 +634,7 @@ func main() {
 		var lastJobTime time.Time
 		var nodeReady bool
 		var lastSyncLog time.Time
+		var lastStatusLog time.Time
 
 		for {
 			select {
@@ -641,6 +642,18 @@ func main() {
 				logger.Info("Job broadcast loop shutting down")
 				return
 			case <-ticker.C:
+				// Periodic status log every 60 seconds
+				if time.Since(lastStatusLog) >= 60*time.Second {
+					stats := stratumServer.GetStats()
+					logger.Info("📊 Stratum status",
+						zap.Int64("connections", stats.ActiveConnections),
+						zap.Int64("valid_shares", stats.ValidShares),
+						zap.Int64("invalid_shares", stats.InvalidShares),
+						zap.Int64("blocks_found", stats.BlocksFound),
+						zap.Int64("height", lastHeight),
+						zap.Bool("node_ready", nodeReady))
+					lastStatusLog = time.Now()
+				}
 				// Check if node is synced before attempting block templates
 				if !nodeReady {
 					syncInfo, err := checkNodeSync(rpcURL)
@@ -670,9 +683,19 @@ func main() {
 					// Check if node became unsynced
 					if strings.Contains(err.Error(), "connection") || strings.Contains(err.Error(), "reset") {
 						nodeReady = false
+						logger.Warn("Node connection lost, waiting for reconnect", zap.Error(err))
+					} else {
+						logger.Error("Failed to get block template", zap.Error(err))
 					}
-					logger.Error("Failed to get block template", zap.Error(err))
 					continue
+				}
+
+				// Log first successful template fetch
+				if lastHeight == 0 {
+					logger.Info("📦 First block template received",
+						zap.Int64("height", template.Height),
+						zap.Int("tx_count", len(template.Transactions)),
+						zap.String("bits", template.Bits))
 				}
 
 				// Update network difficulty from block template bits (actual next-block target)

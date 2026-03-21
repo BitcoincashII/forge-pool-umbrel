@@ -1383,9 +1383,12 @@ func (s *Server) BroadcastJob(job *Job) {
 		s.clearSharesForJob()
 	}
 
+	var authorizedCount, totalCount int
 	s.clients.Range(func(key, value interface{}) bool {
+		totalCount++
 		client := value.(*Client)
 		if client.Authorized {
+			authorizedCount++
 			// For clean jobs (new block), resend difficulty to ensure miners have it
 			// Some miners (like Whatsminer) may miss difficulty notifications
 			if job.CleanJobs {
@@ -1398,6 +1401,13 @@ func (s *Server) BroadcastJob(job *Job) {
 		}
 		return true
 	})
+
+	s.logger.Info("📤 Job broadcast",
+		zap.String("job_id", job.ID),
+		zap.Int64("height", job.Height),
+		zap.Bool("clean", job.CleanJobs),
+		zap.Int("authorized_miners", authorizedCount),
+		zap.Int("total_connections", totalCount))
 }
 
 func (s *Server) GetStats() *ServerStats {
