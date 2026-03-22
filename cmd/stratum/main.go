@@ -1286,9 +1286,10 @@ func internalAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 		remoteIP = strings.Trim(remoteIP, "[]") // Remove IPv6 brackets
 
-		// Strict localhost check
+		// Strict localhost check - also allow Docker bridge networks (172.x.x.x, 10.x.x.x)
 		isLocalhost := remoteIP == "127.0.0.1" || remoteIP == "::1" || remoteIP == "localhost"
-		if !isLocalhost {
+		isDockerNetwork := strings.HasPrefix(remoteIP, "172.") || strings.HasPrefix(remoteIP, "10.")
+		if !isLocalhost && !isDockerNetwork {
 			log.Printf("⚠️ SECURITY: Blocked internal API access from external IP: %s (path: %s)", remoteIP, r.URL.Path)
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
