@@ -1574,9 +1574,9 @@ func startStatsServer() {
 		})
 	}))
 
-	// Listen only on localhost for internal endpoints
-	log.Printf("Internal stats server starting on 127.0.0.1:3337")
-	if err := http.ListenAndServe("127.0.0.1:3337", nil); err != nil {
+	// Listen on all interfaces for internal endpoints (needed for Docker networking)
+	log.Printf("Internal stats server starting on 0.0.0.0:3337")
+	if err := http.ListenAndServe("0.0.0.0:3337", nil); err != nil {
 		log.Printf("ERROR: Internal stats server failed: %v", err)
 	}
 }
