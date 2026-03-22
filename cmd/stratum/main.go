@@ -566,14 +566,11 @@ func main() {
 	pplnsWindow = config.GetInt("pool.pplns_window")
 
 	// Override with user settings from pool-config.json (Umbrel UI)
+	// Note: fees can be 0 (free pool), so always apply if config exists
 	if userConfig := loadPoolConfigFromJSON(); userConfig != nil {
-		if userConfig.PoolFee > 0 {
-			poolFee = userConfig.PoolFee
-		}
-		if userConfig.SoloFee > 0 {
-			soloFee = userConfig.SoloFee
-		}
-		if userConfig.MinPayout > 0 {
+		poolFee = userConfig.PoolFee
+		soloFee = userConfig.SoloFee
+		if userConfig.MinPayout >= 0.1 {
 			minPayout = userConfig.MinPayout
 		}
 	}

@@ -257,12 +257,12 @@
                 const res = await fetch(API + '/pool/config');
                 const data = await res.json();
 
-                document.getElementById('stratumPort').value = data.stratum_port || 3333;
-                document.getElementById('poolWallet').value = data.pool_wallet || '';
+                document.getElementById('stratumPort').value = data.stratum_port ?? 3333;
+                document.getElementById('poolWallet').value = data.pool_wallet ?? '';
                 document.getElementById('poolName').value = data.pool_name || 'My Forge Pool';
-                document.getElementById('poolFee').value = data.pool_fee || 1.0;
-                document.getElementById('soloFee').value = data.solo_fee || 0.5;
-                document.getElementById('minPayout').value = data.min_payout || 5.0;
+                document.getElementById('poolFee').value = data.pool_fee ?? 1.0;
+                document.getElementById('soloFee').value = data.solo_fee ?? 0.5;
+                document.getElementById('minPayout').value = data.min_payout ?? 5.0;
             } catch (e) {
                 console.error('Failed to load settings:', e);
                 showMessage('Failed to load settings', 'error');
@@ -286,13 +286,16 @@
             btn.textContent = 'Saving...';
 
             try {
+                const poolFeeVal = document.getElementById('poolFee').value;
+                const soloFeeVal = document.getElementById('soloFee').value;
+                const minPayoutVal = document.getElementById('minPayout').value;
                 const data = {
                     stratum_port: parseInt(document.getElementById('stratumPort').value) || 3333,
                     pool_wallet: document.getElementById('poolWallet').value.trim(),
                     pool_name: document.getElementById('poolName').value.trim() || 'My Forge Pool',
-                    pool_fee: parseFloat(document.getElementById('poolFee').value) || 1.0,
-                    solo_fee: parseFloat(document.getElementById('soloFee').value) || 0.5,
-                    min_payout: parseFloat(document.getElementById('minPayout').value) || 5.0
+                    pool_fee: poolFeeVal !== '' ? parseFloat(poolFeeVal) : 1.0,
+                    solo_fee: soloFeeVal !== '' ? parseFloat(soloFeeVal) : 0.5,
+                    min_payout: minPayoutVal !== '' ? parseFloat(minPayoutVal) : 5.0
                 };
 
                 const res = await fetch(API + '/pool/config', {
