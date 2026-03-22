@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -270,6 +271,29 @@ func getRPCCredentials() (string, string) {
 	return user, pass
 }
 
+// loadPoolAddressFromConfig reads pool_wallet from pool-config.json (Umbrel settings)
+func loadPoolAddressFromConfig() string {
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = "/data"
+	}
+	configPath := filepath.Join(dataDir, "config", "pool-config.json")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return ""
+	}
+	var cfg struct {
+		PoolWallet string `json:"pool_wallet"`
+	}
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return ""
+	}
+	if cfg.PoolWallet != "" {
+		fmt.Printf("Loaded pool address from config: %s\n", cfg.PoolWallet)
+	}
+	return cfg.PoolWallet
+}
+
 func rpcCall(url, method string, params []interface{}) (interface{}, error) {
 	reqBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
@@ -506,6 +530,10 @@ func main() {
 
 	// Load pool configuration
 	poolAddress = config.GetString("pool.address")
+	if poolAddress == "" {
+		// Try reading from pool-config.json (Umbrel settings)
+		poolAddress = loadPoolAddressFromConfig()
+	}
 	if poolAddress == "" {
 		logger.Fatal("❌ POOL_ADDRESS is required. Set your BCH2 wallet address in Settings before mining.")
 	}
