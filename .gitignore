@@ -29,3 +29,5 @@ docker/stratum/stratum
 # Compiled binaries
 api
 stratum
+test-data/
+test-compose.yml
