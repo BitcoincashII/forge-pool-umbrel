@@ -1,0 +1,101 @@
+services:
+  node:
+    image: ghcr.io/bitcoincashii/forge-pool-node:latest
+    container_name: test-forge-node
+    restart: unless-stopped
+    stop_grace_period: 1m
+    ports:
+      - "127.0.0.1:18342:8342"
+    volumes:
+      - /tmp/forge-pool-umbrel/test-data/node:/root/.bch2
+    command:
+      - -printtoconsole
+      - -prune=550
+      - -server=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcport=8342
+      - -rpcuser=test
+      - -rpcpassword=testpass
+
+  api:
+    image: ghcr.io/bitcoincashii/forge-pool-api:latest
+    container_name: test-forge-api
+    restart: unless-stopped
+    depends_on:
+      - node
+      - postgres
+      - redis
+    ports:
+      - "127.0.0.1:18080:8080"
+    volumes:
+      - /tmp/forge-pool-umbrel/test-data/data:/data
+    environment:
+      DATA_DIR: /data
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: forge
+      DB_PASSWORD: testpass
+      DB_NAME: forgepool
+      REDIS_URL: redis://redis:6379
+      RPC_HOST: node
+      RPC_PORT: "8342"
+      RPC_USER: test
+      RPC_PASSWORD: testpass
+
+  stratum:
+    image: ghcr.io/bitcoincashii/forge-pool-stratum:latest
+    container_name: test-forge-stratum
+    restart: unless-stopped
+    depends_on:
+      - api
+      - node
+      - postgres
+    ports:
+      - "13333:3333"
+    volumes:
+      - /tmp/forge-pool-umbrel/test-data/data:/data
+      - /tmp/forge-pool-umbrel/test-data/data/configs:/configs
+    environment:
+      DATA_DIR: /data
+      API_HOST: api
+      API_PORT: "8080"
+      API_URL: http://api:8080
+      RPC_HOST: node
+      RPC_PORT: "8342"
+      RPC_USER: test
+      RPC_PASSWORD: testpass
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: forge
+      DB_PASSWORD: testpass
+      DB_NAME: forgepool
+
+  web:
+    image: ghcr.io/bitcoincashii/forge-pool-web:latest
+    container_name: test-forge-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "13080:80"
+    environment:
+      API_URL: http://api:8080
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: test-forge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: forge
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: forgepool
+    volumes:
+      - /tmp/forge-pool-umbrel/test-data/postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: test-forge-redis
+    restart: unless-stopped
+    volumes:
+      - /tmp/forge-pool-umbrel/test-data/redis:/data
