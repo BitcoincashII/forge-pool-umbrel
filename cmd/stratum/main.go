@@ -271,8 +271,17 @@ func getRPCCredentials() (string, string) {
 	return user, pass
 }
 
-// loadPoolAddressFromConfig reads pool_wallet from pool-config.json (Umbrel settings)
-func loadPoolAddressFromConfig() string {
+// PoolConfig holds user-configurable pool settings from Umbrel UI
+type PoolConfig struct {
+	PoolWallet  string  `json:"pool_wallet"`
+	PoolFee     float64 `json:"pool_fee"`
+	SoloFee     float64 `json:"solo_fee"`
+	MinPayout   float64 `json:"min_payout"`
+	StratumPort int     `json:"stratum_port"`
+}
+
+// loadPoolConfigFromJSON reads pool settings from pool-config.json (Umbrel settings)
+func loadPoolConfigFromJSON() *PoolConfig {
 	dataDir := os.Getenv("DATA_DIR")
 	if dataDir == "" {
 		dataDir = "/data"
@@ -280,18 +289,26 @@ func loadPoolAddressFromConfig() string {
 	configPath := filepath.Join(dataDir, "config", "pool-config.json")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return ""
+		return nil
 	}
-	var cfg struct {
-		PoolWallet string `json:"pool_wallet"`
-	}
+	var cfg PoolConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return ""
+		return nil
 	}
 	if cfg.PoolWallet != "" {
-		fmt.Printf("Loaded pool address from config: %s\n", cfg.PoolWallet)
+		fmt.Printf("Loaded pool config from JSON: address=%s fee=%.2f solo_fee=%.2f min_payout=%.2f\n",
+			cfg.PoolWallet, cfg.PoolFee, cfg.SoloFee, cfg.MinPayout)
 	}
-	return cfg.PoolWallet
+	return &cfg
+}
+
+// loadPoolAddressFromConfig reads pool_wallet from pool-config.json (Umbrel settings)
+func loadPoolAddressFromConfig() string {
+	cfg := loadPoolConfigFromJSON()
+	if cfg != nil {
+		return cfg.PoolWallet
+	}
+	return ""
 }
 
 func rpcCall(url, method string, params []interface{}) (interface{}, error) {
@@ -542,11 +559,27 @@ func main() {
 		logger.Fatal("❌ Invalid pool address format. Must be a BCH2 address starting with 'bitcoincashii:q'",
 			zap.String("address", poolAddress))
 	}
+
+	// Load defaults from stratum.yaml
 	poolFee = config.GetFloat64("pool.fee")
 	soloFee = config.GetFloat64("pool.solo_fee")
 	blockReward = config.GetFloat64("pool.block_reward")
 	minPayout = config.GetFloat64("pool.min_payout")
 	pplnsWindow = config.GetInt("pool.pplns_window")
+
+	// Override with user settings from pool-config.json (Umbrel UI)
+	if userConfig := loadPoolConfigFromJSON(); userConfig != nil {
+		if userConfig.PoolFee > 0 {
+			poolFee = userConfig.PoolFee
+		}
+		if userConfig.SoloFee > 0 {
+			soloFee = userConfig.SoloFee
+		}
+		if userConfig.MinPayout > 0 {
+			minPayout = userConfig.MinPayout
+		}
+	}
+
 	if pplnsWindow <= 0 {
 		pplnsWindow = 100000 // Default PPLNS window
 	}
