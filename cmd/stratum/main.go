@@ -506,6 +506,14 @@ func main() {
 
 	// Load pool configuration
 	poolAddress = config.GetString("pool.address")
+	if poolAddress == "" {
+		logger.Fatal("❌ POOL_ADDRESS is required. Set your BCH2 wallet address in Settings before mining.")
+	}
+	// Validate address format
+	if !strings.HasPrefix(poolAddress, "bitcoincashii:q") {
+		logger.Fatal("❌ Invalid pool address format. Must be a BCH2 address starting with 'bitcoincashii:q'",
+			zap.String("address", poolAddress))
+	}
 	poolFee = config.GetFloat64("pool.fee")
 	soloFee = config.GetFloat64("pool.solo_fee")
 	blockReward = config.GetFloat64("pool.block_reward")
@@ -515,7 +523,7 @@ func main() {
 		pplnsWindow = 100000 // Default PPLNS window
 	}
 
-	logger.Info("Pool configuration loaded",
+	logger.Info("✅ Pool configuration loaded",
 		zap.String("address", poolAddress),
 		zap.Float64("fee", poolFee),
 		zap.Float64("solo_fee", soloFee),

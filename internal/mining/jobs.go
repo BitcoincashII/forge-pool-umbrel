@@ -58,9 +58,8 @@ func NewJobManager(rpcURL, rpcUser, rpcPassword, poolAddress string) *JobManager
 		}
 	}
 	if pkh == nil {
-		// Last resort fallback
-		fmt.Printf("WARNING: Could not parse pool address, using fallback\n")
-		pkh, _ = hex.DecodeString("0000000000000000000000000000000000000000")
+		// No fallback - pool address is required
+		panic("FATAL: Could not parse pool address. Set a valid BCH2 address in Settings.")
 	}
 
 	return &JobManager{
