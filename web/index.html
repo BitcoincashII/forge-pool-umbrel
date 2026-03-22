@@ -377,36 +377,56 @@
 
         async function fetchMiner() {
             try {
-                // For personal pool, use first miner or pool address
-                const statsRes = await fetch(API + '/stats');
-                const stats = await statsRes.json();
+                // Fetch all workers directly from stratum (doesn't require miners in DB)
+                const workersRes = await fetch(API + '/workers');
+                const workersData = await workersRes.json();
+                const workers = workersData.workers || [];
 
-                // Try to get first miner
+                // Aggregate stats from all workers
+                let totalHashrate = 0;
+                let totalShares = 0;
+                let bestDiff = 0;
+                let onlineCount = 0;
+
+                for (const w of workers) {
+                    totalShares += w.validShares || 0;
+                    if (w.bestDiff > bestDiff) bestDiff = w.bestDiff;
+                    if (w.online) {
+                        onlineCount++;
+                        totalHashrate += w.hashrate5m || 0;
+                    }
+                }
+
+                document.getElementById('hashrate').textContent = formatHashrate(totalHashrate * 1e12);
+                document.getElementById('workers').textContent = onlineCount;
+                document.getElementById('shares').textContent = formatNumber(totalShares);
+                document.getElementById('bestShare').textContent = formatNumber(bestDiff);
+
+                // Render workers list
+                const workerList = workers.map(w => ({
+                    name: w.name || 'default',
+                    online: w.online,
+                    hashrate: w.hashrate5m || 0
+                }));
+                renderWorkers(workerList);
+
+                // Blocks - try to get from first miner if available
                 const minersRes = await fetch(API + '/miners?limit=1');
                 const miners = await minersRes.json();
-
                 if (miners && miners.length > 0) {
+                    const blocksRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address) + '/solo-blocks');
+                    const blocks = await blocksRes.json();
+                    renderBlocks(blocks);
+
+                    // Also get balance if miner exists in DB
                     const minerRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address));
                     const miner = await minerRes.json();
-
                     document.getElementById('balance').innerHTML =
                         (miner.matureBalance || 0).toFixed(2) + ' <small>BCH2</small>';
                     document.getElementById('balanceSub').textContent =
                         '+ ' + (miner.immatureBalance || 0).toFixed(2) + ' BCH2 immature';
-                    document.getElementById('hashrate').textContent = formatHashrate((miner.hashrate5m || 0) * 1e12);
-                    document.getElementById('workers').textContent = miner.onlineWorkers || 0;
-                    document.getElementById('shares').textContent = formatNumber(miner.validShares || 0);
-                    document.getElementById('bestShare').textContent = formatNumber(miner.bestDiff || 0);
-
-                    // Fetch workers
-                    const workersRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address) + '/workers');
-                    const workers = await workersRes.json();
-                    renderWorkers(workers);
-
-                    // Fetch blocks
-                    const blocksRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address) + '/solo-blocks');
-                    const blocks = await blocksRes.json();
-                    renderBlocks(blocks);
+                } else {
+                    renderBlocks([]);
                 }
             } catch (e) {
                 console.error('Failed to fetch miner:', e);
