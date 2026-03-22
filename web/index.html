@@ -274,6 +274,14 @@
             <div class="stat-label">Shares</div>
         </div>
         <div class="stat-card">
+            <div class="stat-value" id="netHashrate">--</div>
+            <div class="stat-label">Net Hash</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="netDifficulty">--</div>
+            <div class="stat-label">Net Diff</div>
+        </div>
+        <div class="stat-card">
             <div class="stat-value" id="bestShare">--</div>
             <div class="stat-label">Best Share</div>
         </div>
@@ -360,6 +368,11 @@
                 document.getElementById('poolMiners').textContent = data.miners || 0;
                 document.getElementById('poolBlocks').textContent = data.blocksFound || 0;
                 document.getElementById('uptime').textContent = data.uptime?.split('.')[0] || '--';
+
+                // Network stats
+                const netHash = data.networkHashrate || 0;
+                document.getElementById('netHashrate').textContent = formatHashrate(netHash);
+                document.getElementById('netDifficulty').textContent = formatNumber(data.networkDifficulty || 0);
 
                 poolAddress = data.poolAddress || '';
                 const host = location.hostname === 'localhost' ? 'umbrel.local' : location.hostname;
