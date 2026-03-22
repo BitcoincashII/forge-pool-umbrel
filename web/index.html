@@ -223,6 +223,19 @@
         .empty { padding: 32px; text-align: center; color: var(--text-dim); font-size: 13px; }
         .loading { opacity: 0.5; }
 
+        .warning-banner {
+            background: #ff4757;
+            color: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .warning-banner h3 { margin: 0 0 8px 0; font-size: 16px; }
+        .warning-banner p { margin: 0; font-size: 13px; opacity: 0.9; }
+        .warning-banner a { color: #fff; font-weight: 600; }
+        .hidden { display: none; }
+
         @media (min-width: 600px) {
             body { max-width: 500px; margin: 0 auto; }
             .stats-grid { grid-template-columns: repeat(3, 1fr); }
@@ -237,6 +250,11 @@
             <div class="status-dot"></div>
             <span id="uptime">--</span>
         </div>
+    </div>
+
+    <div id="setupWarning" class="warning-banner hidden">
+        <h3>⚠️ Setup Required</h3>
+        <p>Set your BCH2 wallet address in <a href="/settings">Settings</a> before mining.</p>
     </div>
 
     <div class="pool-stats">
@@ -376,10 +394,17 @@
 
                 poolAddress = data.poolAddress || '';
                 const host = location.hostname === 'localhost' ? 'umbrel.local' : location.hostname;
-                // Fetch port from config
+                // Fetch port from config and check if wallet is set
                 fetch(API + '/pool/config').then(r => r.json()).then(cfg => {
                     const port = cfg.stratum_port || 3333;
                     document.getElementById('stratumUrl').textContent = 'stratum+tcp://' + host + ':' + port;
+                    // Show warning if no wallet address configured
+                    const warning = document.getElementById('setupWarning');
+                    if (!cfg.pool_wallet || cfg.pool_wallet === '') {
+                        warning.classList.remove('hidden');
+                    } else {
+                        warning.classList.add('hidden');
+                    }
                 }).catch(() => {
                     document.getElementById('stratumUrl').textContent = 'stratum+tcp://' + host + ':3333';
                 });
