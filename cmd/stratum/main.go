@@ -934,8 +934,8 @@ func (p *BlockFindingShareProcessor) ProcessShare(ctx context.Context, share *st
 	stats.GetManager().UpdateWorker(share.MinerID, share.WorkerName, true, share.Difficulty, share.ActualDiff)
 
 	// Save share to database for PPLNS distribution
-	// Use target difficulty as the credited work amount
-	if err := stats.SaveShare(share.MinerID, share.WorkerName, share.Difficulty, share.IsSolo); err != nil {
+	// Use target difficulty as the credited work amount, also save actual diff for best share tracking
+	if err := stats.SaveShare(share.MinerID, share.WorkerName, share.Difficulty, share.ActualDiff, share.IsSolo); err != nil {
 		p.logger.Warn("Failed to save share to DB", zap.Error(err))
 	}
 
@@ -1645,7 +1645,7 @@ func (p *V2ShareProcessor) ProcessShare(ctx context.Context, share *stratumv2.Sh
 	stats.GetManager().UpdateWorker(share.MinerID, share.WorkerName, true, share.Difficulty, share.ActualDiff)
 
 	// Save share to database
-	if err := stats.SaveShare(share.MinerID, share.WorkerName, share.Difficulty, share.IsSolo); err != nil {
+	if err := stats.SaveShare(share.MinerID, share.WorkerName, share.Difficulty, share.ActualDiff, share.IsSolo); err != nil {
 		p.logger.Warn("Failed to save V2 share to DB", zap.Error(err))
 	}
 

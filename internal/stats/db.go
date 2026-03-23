@@ -113,11 +113,14 @@ func createTablesIfNotExist() error {
 			miner_address VARCHAR(255) NOT NULL,
 			worker_name VARCHAR(255),
 			difficulty NUMERIC(20,8) NOT NULL,
+			share_diff NUMERIC(30,8) DEFAULT 0,
 			is_solo BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMP DEFAULT NOW()
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_shares_miner ON shares(miner_address)`,
 		`CREATE INDEX IF NOT EXISTS idx_shares_time ON shares(created_at DESC)`,
+		// Migration: add share_diff column to existing tables
+		`ALTER TABLE shares ADD COLUMN IF NOT EXISTS share_diff NUMERIC(30,8) DEFAULT 0`,
 		`CREATE TABLE IF NOT EXISTS payouts (
 			id SERIAL PRIMARY KEY,
 			miner_address VARCHAR(255) NOT NULL,
@@ -965,16 +968,48 @@ func GetMinerSoloPayoutsDB(minerID string) ([]PayoutRecord, int, float64) {
 }
 
 // SaveShare saves a PPLNS share to the database for reward distribution
-func SaveShare(minerAddress string, workerName string, difficulty float64, isSolo bool) error {
+func SaveShare(minerAddress string, workerName string, difficulty float64, actualDiff float64, isSolo bool) error {
 	if db == nil {
 		return nil
 	}
 
 	_, err := db.Exec(`
-		INSERT INTO shares (miner_address, worker_name, difficulty, is_solo)
-		VALUES ($1, $2, $3, $4)`,
-		minerAddress, workerName, difficulty, isSolo)
+		INSERT INTO shares (miner_address, worker_name, difficulty, share_diff, is_solo)
+		VALUES ($1, $2, $3, $4, $5)`,
+		minerAddress, workerName, difficulty, actualDiff, isSolo)
 	return err
+}
+
+// GetMinerBestDiff returns the best (highest) share difficulty for a miner from the database
+func GetMinerBestDiff(minerAddress string) float64 {
+	if db == nil {
+		return 0
+	}
+
+	var bestDiff float64
+	err := db.QueryRow(`
+		SELECT COALESCE(MAX(share_diff), 0) FROM shares WHERE miner_address = $1`,
+		minerAddress).Scan(&bestDiff)
+	if err != nil {
+		return 0
+	}
+	return bestDiff
+}
+
+// GetWorkerBestDiff returns the best (highest) share difficulty for a specific worker
+func GetWorkerBestDiff(minerAddress string, workerName string) float64 {
+	if db == nil {
+		return 0
+	}
+
+	var bestDiff float64
+	err := db.QueryRow(`
+		SELECT COALESCE(MAX(share_diff), 0) FROM shares WHERE miner_address = $1 AND worker_name = $2`,
+		minerAddress, workerName).Scan(&bestDiff)
+	if err != nil {
+		return 0
+	}
+	return bestDiff
 }
 
 // PPLNSShare represents a miner's share contribution in the PPLNS window
