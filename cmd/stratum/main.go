@@ -278,6 +278,7 @@ type PoolConfig struct {
 	SoloFee     float64 `json:"solo_fee"`
 	MinPayout   float64 `json:"min_payout"`
 	StratumPort int     `json:"stratum_port"`
+	CoinbaseTag string  `json:"coinbase_tag"`
 }
 
 // loadPoolConfigFromJSON reads pool settings from pool-config.json (Umbrel settings)
@@ -296,8 +297,8 @@ func loadPoolConfigFromJSON() *PoolConfig {
 		return nil
 	}
 	if cfg.PoolWallet != "" {
-		fmt.Printf("Loaded pool config from JSON: address=%s fee=%.2f solo_fee=%.2f min_payout=%.2f\n",
-			cfg.PoolWallet, cfg.PoolFee, cfg.SoloFee, cfg.MinPayout)
+		fmt.Printf("Loaded pool config from JSON: address=%s fee=%.2f solo_fee=%.2f min_payout=%.2f coinbase_tag=%s\n",
+			cfg.PoolWallet, cfg.PoolFee, cfg.SoloFee, cfg.MinPayout, cfg.CoinbaseTag)
 	}
 	return &cfg
 }
@@ -601,7 +602,14 @@ func main() {
 		zap.Int("target_time", serverConfig.TargetShareTime),
 		zap.Int("retarget_time", serverConfig.RetargetTime))
 
-	jobManager = mining.NewJobManager(rpcURL, rpcUser, rpcPass, poolAddress, serverConfig.ExtraNonce1Size, serverConfig.ExtraNonce2Size)
+	// Load coinbase tag from user config, default to "Forge"
+	coinbaseTag := "Forge"
+	if userConfig := loadPoolConfigFromJSON(); userConfig != nil && userConfig.CoinbaseTag != "" {
+		coinbaseTag = userConfig.CoinbaseTag
+	}
+	logger.Info("Coinbase tag configured", zap.String("tag", coinbaseTag))
+
+	jobManager = mining.NewJobManager(rpcURL, rpcUser, rpcPass, poolAddress, serverConfig.ExtraNonce1Size, serverConfig.ExtraNonce2Size, coinbaseTag)
 
 	shareProcessor := &BlockFindingShareProcessor{logger: logger}
 	// Create API-backed miner settings store

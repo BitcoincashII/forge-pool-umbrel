@@ -16,6 +16,7 @@ type PoolConfig struct {
 	PoolFee     float64   `json:"pool_fee"`
 	SoloFee     float64   `json:"solo_fee"`
 	MinPayout   float64   `json:"min_payout"`
+	CoinbaseTag string    `json:"coinbase_tag"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
@@ -28,6 +29,7 @@ func GetDefaults() *PoolConfig {
 		PoolFee:     1.0,
 		SoloFee:     0.5,
 		MinPayout:   5.0,
+		CoinbaseTag: "Forge",
 		UpdatedAt:   time.Now(),
 	}
 }
@@ -55,6 +57,9 @@ func LoadConfig(dataDir string) (*PoolConfig, error) {
 	}
 	if cfg.PoolName == "" {
 		cfg.PoolName = defaults.PoolName
+	}
+	if cfg.CoinbaseTag == "" {
+		cfg.CoinbaseTag = defaults.CoinbaseTag
 	}
 	// Note: PoolFee, SoloFee can be 0 (free pool), don't override
 	// MinPayout validated separately (must be >= 0.1)
@@ -99,6 +104,18 @@ func ValidateConfig(cfg *PoolConfig) error {
 
 	if cfg.PoolName == "" {
 		cfg.PoolName = "My Forge Pool"
+	}
+
+	// Validate CoinbaseTag: 1-20 chars, ASCII printable only
+	if cfg.CoinbaseTag != "" {
+		if len(cfg.CoinbaseTag) > 20 {
+			return errors.New("coinbase tag must be 20 characters or less")
+		}
+		for _, c := range cfg.CoinbaseTag {
+			if c < 32 || c > 126 {
+				return errors.New("coinbase tag must contain only ASCII printable characters")
+			}
+		}
 	}
 
 	return nil

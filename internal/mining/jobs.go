@@ -37,9 +37,10 @@ type JobManager struct {
 	jobCounter      uint64
 	extranonce1Size int
 	extranonce2Size int
+	coinbaseTag     string
 }
 
-func NewJobManager(rpcURL, rpcUser, rpcPassword, poolAddress string, extranonce1Size, extranonce2Size int) *JobManager {
+func NewJobManager(rpcURL, rpcUser, rpcPassword, poolAddress string, extranonce1Size, extranonce2Size int, coinbaseTag string) *JobManager {
 	// Try to get pubkey hash from node's validateaddress RPC with retries
 	var pkh []byte
 	for i := 0; i < 10; i++ {
@@ -71,6 +72,9 @@ func NewJobManager(rpcURL, rpcUser, rpcPassword, poolAddress string, extranonce1
 	if extranonce2Size <= 0 {
 		extranonce2Size = 4
 	}
+	if coinbaseTag == "" {
+		coinbaseTag = "Forge"
+	}
 
 	return &JobManager{
 		rpcURL:          rpcURL,
@@ -79,6 +83,7 @@ func NewJobManager(rpcURL, rpcUser, rpcPassword, poolAddress string, extranonce1
 		pubkeyHash:      pkh,
 		extranonce1Size: extranonce1Size,
 		extranonce2Size: extranonce2Size,
+		coinbaseTag:     coinbaseTag,
 	}
 }
 
@@ -276,7 +281,7 @@ func (jm *JobManager) CreateJob(template *BlockTemplate) *Job {
 
 func (jm *JobManager) buildCoinbase(template *BlockTemplate) (string, string) {
 	heightBytes := makeHeightScript(template.Height)
-	poolMsg := []byte("Forge")
+	poolMsg := []byte(jm.coinbaseTag)
 	scriptLen := len(heightBytes) + jm.extranonce1Size + jm.extranonce2Size + len(poolMsg)
 	
 	var cb1 bytes.Buffer

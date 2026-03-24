@@ -1508,6 +1508,7 @@ func getPoolConfig(c *fiber.Ctx) error {
 		"pool_fee":     cfg.PoolFee,
 		"solo_fee":     cfg.SoloFee,
 		"min_payout":   cfg.MinPayout,
+		"coinbase_tag": cfg.CoinbaseTag,
 		"updated_at":   cfg.UpdatedAt,
 	})
 }
@@ -1521,6 +1522,7 @@ func savePoolConfig(c *fiber.Ctx) error {
 		PoolFee     float64 `json:"pool_fee"`
 		SoloFee     float64 `json:"solo_fee"`
 		MinPayout   float64 `json:"min_payout"`
+		CoinbaseTag string  `json:"coinbase_tag"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -1534,6 +1536,7 @@ func savePoolConfig(c *fiber.Ctx) error {
 		PoolFee:     req.PoolFee,
 		SoloFee:     req.SoloFee,
 		MinPayout:   req.MinPayout,
+		CoinbaseTag: req.CoinbaseTag,
 		UpdatedAt:   time.Now(),
 	}
 
