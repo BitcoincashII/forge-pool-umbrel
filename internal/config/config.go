@@ -10,27 +10,29 @@ import (
 
 // PoolConfig holds all configurable pool settings
 type PoolConfig struct {
-	StratumPort int       `json:"stratum_port"`
-	PoolWallet  string    `json:"pool_wallet"`
-	PoolName    string    `json:"pool_name"`
-	PoolFee     float64   `json:"pool_fee"`
-	SoloFee     float64   `json:"solo_fee"`
-	MinPayout   float64   `json:"min_payout"`
-	CoinbaseTag string    `json:"coinbase_tag"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	StratumPort   int       `json:"stratum_port"`
+	PoolWallet    string    `json:"pool_wallet"`
+	PoolName      string    `json:"pool_name"`
+	PoolFee       float64   `json:"pool_fee"`
+	SoloFee       float64   `json:"solo_fee"`
+	MinPayout     float64   `json:"min_payout"`
+	CoinbaseTag   string    `json:"coinbase_tag"`
+	VardiffMinDiff float64  `json:"vardiff_min_diff"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // GetDefaults returns default configuration
 func GetDefaults() *PoolConfig {
 	return &PoolConfig{
-		StratumPort: 3333,
-		PoolWallet:  "",
-		PoolName:    "My Forge Pool",
-		PoolFee:     1.0,
-		SoloFee:     0.5,
-		MinPayout:   5.0,
-		CoinbaseTag: "Forge",
-		UpdatedAt:   time.Now(),
+		StratumPort:    3333,
+		PoolWallet:     "",
+		PoolName:       "My Forge Pool",
+		PoolFee:        1.0,
+		SoloFee:        0.5,
+		MinPayout:      5.0,
+		CoinbaseTag:    "Forge",
+		VardiffMinDiff: 32768,
+		UpdatedAt:      time.Now(),
 	}
 }
 
@@ -116,6 +118,11 @@ func ValidateConfig(cfg *PoolConfig) error {
 				return errors.New("coinbase tag must contain only ASCII printable characters")
 			}
 		}
+	}
+
+	// Validate VardiffMinDiff: 1024-500000
+	if cfg.VardiffMinDiff != 0 && (cfg.VardiffMinDiff < 1024 || cfg.VardiffMinDiff > 500000) {
+		return errors.New("vardiff minimum difficulty must be between 1024 and 500000")
 	}
 
 	return nil

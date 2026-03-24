@@ -1502,27 +1502,29 @@ func getPoolConfig(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"stratum_port": cfg.StratumPort,
-		"pool_wallet":  cfg.PoolWallet,
-		"pool_name":    cfg.PoolName,
-		"pool_fee":     cfg.PoolFee,
-		"solo_fee":     cfg.SoloFee,
-		"min_payout":   cfg.MinPayout,
-		"coinbase_tag": cfg.CoinbaseTag,
-		"updated_at":   cfg.UpdatedAt,
+		"stratum_port":      cfg.StratumPort,
+		"pool_wallet":       cfg.PoolWallet,
+		"pool_name":         cfg.PoolName,
+		"pool_fee":          cfg.PoolFee,
+		"solo_fee":          cfg.SoloFee,
+		"min_payout":        cfg.MinPayout,
+		"coinbase_tag":      cfg.CoinbaseTag,
+		"vardiff_min_diff":  cfg.VardiffMinDiff,
+		"updated_at":        cfg.UpdatedAt,
 	})
 }
 
 // savePoolConfig saves the pool configuration
 func savePoolConfig(c *fiber.Ctx) error {
 	var req struct {
-		StratumPort int     `json:"stratum_port"`
-		PoolWallet  string  `json:"pool_wallet"`
-		PoolName    string  `json:"pool_name"`
-		PoolFee     float64 `json:"pool_fee"`
-		SoloFee     float64 `json:"solo_fee"`
-		MinPayout   float64 `json:"min_payout"`
-		CoinbaseTag string  `json:"coinbase_tag"`
+		StratumPort    int     `json:"stratum_port"`
+		PoolWallet     string  `json:"pool_wallet"`
+		PoolName       string  `json:"pool_name"`
+		PoolFee        float64 `json:"pool_fee"`
+		SoloFee        float64 `json:"solo_fee"`
+		MinPayout      float64 `json:"min_payout"`
+		CoinbaseTag    string  `json:"coinbase_tag"`
+		VardiffMinDiff float64 `json:"vardiff_min_diff"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -1530,14 +1532,15 @@ func savePoolConfig(c *fiber.Ctx) error {
 	}
 
 	cfg := &config.PoolConfig{
-		StratumPort: req.StratumPort,
-		PoolWallet:  req.PoolWallet,
-		PoolName:    req.PoolName,
-		PoolFee:     req.PoolFee,
-		SoloFee:     req.SoloFee,
-		MinPayout:   req.MinPayout,
-		CoinbaseTag: req.CoinbaseTag,
-		UpdatedAt:   time.Now(),
+		StratumPort:    req.StratumPort,
+		PoolWallet:     req.PoolWallet,
+		PoolName:       req.PoolName,
+		PoolFee:        req.PoolFee,
+		SoloFee:        req.SoloFee,
+		MinPayout:      req.MinPayout,
+		CoinbaseTag:    req.CoinbaseTag,
+		VardiffMinDiff: req.VardiffMinDiff,
+		UpdatedAt:      time.Now(),
 	}
 
 	// Validate config

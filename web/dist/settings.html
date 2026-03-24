@@ -236,6 +236,17 @@
             </div>
         </div>
 
+        <div class="section">
+            <div class="section-header">Advanced Settings</div>
+            <div class="section-content">
+                <div class="form-group">
+                    <label class="form-label">Vardiff Minimum Difficulty</label>
+                    <input type="number" id="vardiffMinDiff" class="form-input" placeholder="32768" min="1024" max="500000" step="1">
+                    <div class="form-hint">Minimum share difficulty for miners (1024-500000, requires restart)</div>
+                </div>
+            </div>
+        </div>
+
         <button type="submit" class="btn" id="saveBtn">Save Settings</button>
     </form>
 
@@ -269,6 +280,7 @@
                 document.getElementById('poolFee').value = data.pool_fee ?? 1.0;
                 document.getElementById('soloFee').value = data.solo_fee ?? 0.5;
                 document.getElementById('minPayout').value = data.min_payout ?? 5.0;
+                document.getElementById('vardiffMinDiff').value = data.vardiff_min_diff ?? 32768;
             } catch (e) {
                 console.error('Failed to load settings:', e);
                 showMessage('Failed to load settings', 'error');
@@ -296,6 +308,7 @@
                 const soloFeeVal = document.getElementById('soloFee').value;
                 const minPayoutVal = document.getElementById('minPayout').value;
                 const coinbaseTagVal = document.getElementById('coinbaseTag').value.trim();
+                const vardiffMinDiffVal = document.getElementById('vardiffMinDiff').value;
                 const data = {
                     stratum_port: parseInt(document.getElementById('stratumPort').value) || 3333,
                     pool_wallet: document.getElementById('poolWallet').value.trim(),
@@ -303,7 +316,8 @@
                     coinbase_tag: coinbaseTagVal || 'Forge',
                     pool_fee: poolFeeVal !== '' ? parseFloat(poolFeeVal) : 1.0,
                     solo_fee: soloFeeVal !== '' ? parseFloat(soloFeeVal) : 0.5,
-                    min_payout: minPayoutVal !== '' ? parseFloat(minPayoutVal) : 5.0
+                    min_payout: minPayoutVal !== '' ? parseFloat(minPayoutVal) : 5.0,
+                    vardiff_min_diff: vardiffMinDiffVal !== '' ? parseFloat(vardiffMinDiffVal) : 32768
                 };
 
                 const res = await fetch(API + '/pool/config', {

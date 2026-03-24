@@ -273,12 +273,13 @@ func getRPCCredentials() (string, string) {
 
 // PoolConfig holds user-configurable pool settings from Umbrel UI
 type PoolConfig struct {
-	PoolWallet  string  `json:"pool_wallet"`
-	PoolFee     float64 `json:"pool_fee"`
-	SoloFee     float64 `json:"solo_fee"`
-	MinPayout   float64 `json:"min_payout"`
-	StratumPort int     `json:"stratum_port"`
-	CoinbaseTag string  `json:"coinbase_tag"`
+	PoolWallet     string  `json:"pool_wallet"`
+	PoolFee        float64 `json:"pool_fee"`
+	SoloFee        float64 `json:"solo_fee"`
+	MinPayout      float64 `json:"min_payout"`
+	StratumPort    int     `json:"stratum_port"`
+	CoinbaseTag    string  `json:"coinbase_tag"`
+	VardiffMinDiff float64 `json:"vardiff_min_diff"`
 }
 
 // loadPoolConfigFromJSON reads pool settings from pool-config.json (Umbrel settings)
@@ -297,8 +298,8 @@ func loadPoolConfigFromJSON() *PoolConfig {
 		return nil
 	}
 	if cfg.PoolWallet != "" {
-		fmt.Printf("Loaded pool config from JSON: address=%s fee=%.2f solo_fee=%.2f min_payout=%.2f coinbase_tag=%s\n",
-			cfg.PoolWallet, cfg.PoolFee, cfg.SoloFee, cfg.MinPayout, cfg.CoinbaseTag)
+		fmt.Printf("Loaded pool config from JSON: address=%s fee=%.2f solo_fee=%.2f min_payout=%.2f coinbase_tag=%s vardiff_min_diff=%.0f\n",
+			cfg.PoolWallet, cfg.PoolFee, cfg.SoloFee, cfg.MinPayout, cfg.CoinbaseTag, cfg.VardiffMinDiff)
 	}
 	return &cfg
 }
@@ -489,11 +490,18 @@ func main() {
 		logger.Fatal("Failed to load config", zap.Error(err))
 	}
 
-	// Check for user-configured port from pool config file
+	// Check for user-configured port and vardiff from pool config file
 	stratumPort := config.GetInt("stratum.port")
-	if poolCfg := loadPoolConfigFromJSON(); poolCfg != nil && poolCfg.StratumPort > 0 {
-		stratumPort = poolCfg.StratumPort
-		logger.Info("Using stratum port from user config", zap.Int("port", stratumPort))
+	vardiffMinDiff := config.GetFloat64("stratum.vardiff.min_diff")
+	if poolCfg := loadPoolConfigFromJSON(); poolCfg != nil {
+		if poolCfg.StratumPort > 0 {
+			stratumPort = poolCfg.StratumPort
+			logger.Info("Using stratum port from user config", zap.Int("port", stratumPort))
+		}
+		if poolCfg.VardiffMinDiff >= 1024 && poolCfg.VardiffMinDiff <= 500000 {
+			vardiffMinDiff = poolCfg.VardiffMinDiff
+			logger.Info("Using vardiff min_diff from user config", zap.Float64("min_diff", vardiffMinDiff))
+		}
 	}
 
 	serverConfig := &stratum.ServerConfig{
@@ -503,7 +511,7 @@ func main() {
 		BanDuration:        config.GetDuration("stratum.ban_duration"),
 		MaxSharesPerSecond: config.GetInt("stratum.max_shares_per_second"),
 		VardiffEnabled:     config.GetBool("stratum.vardiff.enabled"),
-		MinDiff:            config.GetFloat64("stratum.vardiff.min_diff"),
+		MinDiff:            vardiffMinDiff,
 		RentalMinDiff:      config.GetFloat64("stratum.vardiff.rental_min_diff"),
 		RentalMaxDiff:      config.GetFloat64("stratum.vardiff.rental_max_diff"),
 		MaxDiff:            config.GetFloat64("stratum.vardiff.max_diff"),
