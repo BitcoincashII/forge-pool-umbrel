@@ -471,23 +471,21 @@
                 }));
                 renderWorkers(workerList);
 
-                // Blocks - try to get from first miner if available
+                // Fetch pool-wide blocks
+                const blocksRes = await fetch(API + '/blocks?limit=5');
+                const blocksData = await blocksRes.json();
+                renderBlocks(blocksData.blocks || []);
+
+                // Get balance from first miner if available
                 const minersRes = await fetch(API + '/miners?limit=1');
                 const miners = await minersRes.json();
                 if (miners && miners.length > 0) {
-                    const blocksRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address) + '/solo-blocks');
-                    const blocks = await blocksRes.json();
-                    renderBlocks(blocks);
-
-                    // Also get balance if miner exists in DB
                     const minerRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address));
                     const miner = await minerRes.json();
                     document.getElementById('balance').innerHTML =
                         (miner.matureBalance || 0).toFixed(2) + ' <small>BCH2</small>';
                     document.getElementById('balanceSub').textContent =
                         '+ ' + (miner.immatureBalance || 0).toFixed(2) + ' BCH2 immature';
-                } else {
-                    renderBlocks([]);
                 }
             } catch (e) {
                 console.error('Failed to fetch miner:', e);
@@ -528,15 +526,18 @@
 
             count.textContent = blocks.length;
 
-            list.innerHTML = blocks.slice(0, 5).map(b => `
+            list.innerHTML = blocks.slice(0, 5).map(b => {
+                // Handle both timestamp formats (unix seconds or ISO string)
+                const blockTime = b.time ? new Date(b.time * 1000) : (b.timestamp ? new Date(b.timestamp) : new Date());
+                return `
                 <div class="block-row">
                     <div class="block-height">${escapeHtml(String(b.height))}</div>
                     <div class="block-info">
-                        <div class="block-time">${escapeHtml(timeAgo(b.timestamp))}</div>
+                        <div class="block-time">${escapeHtml(timeAgo(blockTime))} ${b.type ? '(' + escapeHtml(b.type) + ')' : ''}</div>
                     </div>
                     <div class="block-reward">${escapeHtml((b.reward || 50).toFixed(2))} BCH2</div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         async function fetchNodeStatus() {
