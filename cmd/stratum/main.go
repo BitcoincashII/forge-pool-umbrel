@@ -601,7 +601,7 @@ func main() {
 		zap.Int("target_time", serverConfig.TargetShareTime),
 		zap.Int("retarget_time", serverConfig.RetargetTime))
 
-	jobManager = mining.NewJobManager(rpcURL, rpcUser, rpcPass, poolAddress)
+	jobManager = mining.NewJobManager(rpcURL, rpcUser, rpcPass, poolAddress, serverConfig.ExtraNonce1Size, serverConfig.ExtraNonce2Size)
 
 	shareProcessor := &BlockFindingShareProcessor{logger: logger}
 	// Create API-backed miner settings store

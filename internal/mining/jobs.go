@@ -30,14 +30,16 @@ type TxData struct {
 }
 
 type JobManager struct {
-	rpcURL      string
-	rpcUser     string
-	rpcPassword string
-	pubkeyHash  []byte
-	jobCounter  uint64
+	rpcURL          string
+	rpcUser         string
+	rpcPassword     string
+	pubkeyHash      []byte
+	jobCounter      uint64
+	extranonce1Size int
+	extranonce2Size int
 }
 
-func NewJobManager(rpcURL, rpcUser, rpcPassword, poolAddress string) *JobManager {
+func NewJobManager(rpcURL, rpcUser, rpcPassword, poolAddress string, extranonce1Size, extranonce2Size int) *JobManager {
 	// Try to get pubkey hash from node's validateaddress RPC with retries
 	var pkh []byte
 	for i := 0; i < 10; i++ {
@@ -62,11 +64,21 @@ func NewJobManager(rpcURL, rpcUser, rpcPassword, poolAddress string) *JobManager
 		panic("FATAL: Could not parse pool address. Set a valid BCH2 address in Settings.")
 	}
 
+	// Use defaults if not specified
+	if extranonce1Size <= 0 {
+		extranonce1Size = 4
+	}
+	if extranonce2Size <= 0 {
+		extranonce2Size = 4
+	}
+
 	return &JobManager{
-		rpcURL:      rpcURL,
-		rpcUser:     rpcUser,
-		rpcPassword: rpcPassword,
-		pubkeyHash:  pkh,
+		rpcURL:          rpcURL,
+		rpcUser:         rpcUser,
+		rpcPassword:     rpcPassword,
+		pubkeyHash:      pkh,
+		extranonce1Size: extranonce1Size,
+		extranonce2Size: extranonce2Size,
 	}
 }
 
@@ -265,7 +277,7 @@ func (jm *JobManager) CreateJob(template *BlockTemplate) *Job {
 func (jm *JobManager) buildCoinbase(template *BlockTemplate) (string, string) {
 	heightBytes := makeHeightScript(template.Height)
 	poolMsg := []byte("Forge")
-	scriptLen := len(heightBytes) + 6 + 4 + len(poolMsg) // 6-byte en1 + 4-byte en2
+	scriptLen := len(heightBytes) + jm.extranonce1Size + jm.extranonce2Size + len(poolMsg)
 	
 	var cb1 bytes.Buffer
 	binary.Write(&cb1, binary.LittleEndian, uint32(1))
