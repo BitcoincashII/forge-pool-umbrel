@@ -34,6 +34,9 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -49,6 +52,7 @@ jobs:
         with:
           context: ./docker/node
           file: ./docker/node/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-node:${{ steps.version.outputs.VERSION }}
@@ -61,6 +65,7 @@ jobs:
         with:
           context: .
           file: ./docker/api/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:${{ steps.version.outputs.VERSION }}
@@ -73,6 +78,7 @@ jobs:
         with:
           context: .
           file: ./docker/stratum/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-stratum:${{ steps.version.outputs.VERSION }}
@@ -85,6 +91,7 @@ jobs:
         with:
           context: .
           file: ./docker/web/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:${{ steps.version.outputs.VERSION }}

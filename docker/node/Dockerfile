@@ -1,6 +1,7 @@
 FROM ubuntu:24.04
 
 ARG BCH2_VERSION=27.0.0
+ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y \
     ca-certificates \
@@ -13,11 +14,17 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and extract BCH2 binaries from release
-RUN curl -L https://github.com/BitcoincashII/bitcoincashII-core/releases/download/v${BCH2_VERSION}/bitcoincashII-${BCH2_VERSION}-linux64.tar.gz | \
+# Download and extract BCH2 binaries from release (arch-aware)
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) ARCH_SUFFIX="linux64" ;; \
+        arm64) ARCH_SUFFIX="linux-aarch64" ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    curl -L "https://github.com/BitcoincashII/bitcoincashII-core/releases/download/v${BCH2_VERSION}/bitcoincashII-${BCH2_VERSION}-${ARCH_SUFFIX}.tar.gz" | \
     tar -xz -C /tmp && \
-    cp /tmp/bitcoincashII-${BCH2_VERSION}-linux64/bin/bitcoincashIId /usr/local/bin/ && \
-    cp /tmp/bitcoincashII-${BCH2_VERSION}-linux64/bin/bitcoincashII-cli /usr/local/bin/ && \
+    cp /tmp/bitcoincashII-${BCH2_VERSION}-${ARCH_SUFFIX}/bin/bitcoincashIId /usr/local/bin/ && \
+    cp /tmp/bitcoincashII-${BCH2_VERSION}-${ARCH_SUFFIX}/bin/bitcoincashII-cli /usr/local/bin/ && \
     rm -rf /tmp/bitcoincashII-* && \
     chmod +x /usr/local/bin/bitcoincashII*
 
