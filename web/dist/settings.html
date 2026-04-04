@@ -220,13 +220,8 @@
             <div class="section-content">
                 <div class="form-group">
                     <label class="form-label">Pool Fee (%)</label>
-                    <input type="number" id="poolFee" class="form-input" placeholder="1.0" min="0" max="10" step="0.1">
-                    <div class="form-hint">Fee for PPLNS pool mining (0-10%)</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Solo Fee (%)</label>
                     <input type="number" id="soloFee" class="form-input" placeholder="0.5" min="0" max="10" step="0.1">
-                    <div class="form-hint">Fee for solo mining (0-10%)</div>
+                    <div class="form-hint">Fee deducted from block rewards (0-10%)</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Minimum Payout (BCH2)</label>
@@ -277,7 +272,6 @@
                 document.getElementById('poolWallet').value = data.pool_wallet ?? '';
                 document.getElementById('poolName').value = data.pool_name || 'My Forge Pool';
                 document.getElementById('coinbaseTag').value = data.coinbase_tag || 'Forge';
-                document.getElementById('poolFee').value = data.pool_fee ?? 1.0;
                 document.getElementById('soloFee').value = data.solo_fee ?? 0.5;
                 document.getElementById('minPayout').value = data.min_payout ?? 5.0;
                 document.getElementById('vardiffMinDiff').value = data.vardiff_min_diff ?? 32768;
@@ -304,18 +298,18 @@
             btn.textContent = 'Saving...';
 
             try {
-                const poolFeeVal = document.getElementById('poolFee').value;
                 const soloFeeVal = document.getElementById('soloFee').value;
                 const minPayoutVal = document.getElementById('minPayout').value;
                 const coinbaseTagVal = document.getElementById('coinbaseTag').value.trim();
                 const vardiffMinDiffVal = document.getElementById('vardiffMinDiff').value;
+                const feeValue = soloFeeVal !== '' ? parseFloat(soloFeeVal) : 0.5;
                 const data = {
                     stratum_port: parseInt(document.getElementById('stratumPort').value) || 3333,
                     pool_wallet: document.getElementById('poolWallet').value.trim(),
                     pool_name: document.getElementById('poolName').value.trim() || 'My Forge Pool',
                     coinbase_tag: coinbaseTagVal || 'Forge',
-                    pool_fee: poolFeeVal !== '' ? parseFloat(poolFeeVal) : 1.0,
-                    solo_fee: soloFeeVal !== '' ? parseFloat(soloFeeVal) : 0.5,
+                    pool_fee: feeValue,
+                    solo_fee: feeValue,
                     min_payout: minPayoutVal !== '' ? parseFloat(minPayoutVal) : 5.0,
                     vardiff_min_diff: vardiffMinDiffVal !== '' ? parseFloat(vardiffMinDiffVal) : 32768
                 };
