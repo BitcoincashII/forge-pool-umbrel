@@ -371,37 +371,37 @@
 
         async function fetchMiner() {
             try {
-                // For personal pool, use first miner or pool address
-                const statsRes = await fetch(API + '/stats');
-                const stats = await statsRes.json();
+                // Fetch all workers for the pool
+                const workersRes = await fetch(API + '/workers');
+                const workersData = await workersRes.json();
+                const workers = workersData.workers || [];
 
-                // Try to get first miner
-                const minersRes = await fetch(API + '/miners?limit=1');
-                const miners = await minersRes.json();
+                // Aggregate stats from all workers
+                let totalHashrate = 0;
+                let totalShares = 0;
+                let bestDiff = 0;
+                let onlineCount = 0;
 
-                if (miners && miners.length > 0) {
-                    const minerRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address));
-                    const miner = await minerRes.json();
+                workers.forEach(w => {
+                    if (w.online) {
+                        totalHashrate += w.hashrate5m || 0;
+                        onlineCount++;
+                    }
+                    totalShares += w.validShares || 0;
+                    if ((w.bestDiff || 0) > bestDiff) bestDiff = w.bestDiff;
+                });
 
-                    document.getElementById('balance').innerHTML =
-                        (miner.matureBalance || 0).toFixed(2) + ' <small>BCH2</small>';
-                    document.getElementById('balanceSub').textContent =
-                        '+ ' + (miner.immatureBalance || 0).toFixed(2) + ' BCH2 immature';
-                    document.getElementById('hashrate').textContent = formatHashrate((miner.hashrate5m || 0) * 1e12);
-                    document.getElementById('workers').textContent = miner.onlineWorkers || 0;
-                    document.getElementById('shares').textContent = formatNumber(miner.validShares || 0);
-                    document.getElementById('bestShare').textContent = formatNumber(miner.bestDiff || 0);
+                document.getElementById('hashrate').textContent = formatHashrate(totalHashrate * 1e12);
+                document.getElementById('workers').textContent = onlineCount;
+                document.getElementById('shares').textContent = formatNumber(totalShares);
+                document.getElementById('bestShare').textContent = formatNumber(bestDiff);
 
-                    // Fetch workers
-                    const workersRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address) + '/workers');
-                    const workers = await workersRes.json();
-                    renderWorkers(workers);
+                renderWorkers(workers);
 
-                    // Fetch blocks
-                    const blocksRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address) + '/solo-blocks');
-                    const blocks = await blocksRes.json();
-                    renderBlocks(blocks);
-                }
+                // Fetch pool blocks
+                const blocksRes = await fetch(API + '/blocks');
+                const blocksData = await blocksRes.json();
+                renderBlocks(blocksData.blocks || []);
             } catch (e) {
                 console.error('Failed to fetch miner:', e);
             }
@@ -424,7 +424,7 @@
                 <div class="worker-row">
                     <div class="worker-status ${w.online ? 'online' : 'offline'}"></div>
                     <div class="worker-name">${escapeHtml(w.name || 'default')}</div>
-                    <div class="worker-hashrate">${escapeHtml(formatHashrate((w.hashrate || 0) * 1e12))}</div>
+                    <div class="worker-hashrate">${escapeHtml(formatHashrate((w.hashrate5m || 0) * 1e12))}</div>
                 </div>
             `).join('');
         }
@@ -445,7 +445,7 @@
                 <div class="block-row">
                     <div class="block-height">${escapeHtml(String(b.height))}</div>
                     <div class="block-info">
-                        <div class="block-time">${escapeHtml(timeAgo(b.timestamp))}</div>
+                        <div class="block-time">${escapeHtml(timeAgo(b.time * 1000))}</div>
                     </div>
                     <div class="block-reward">${escapeHtml((b.reward || 50).toFixed(2))} BCH2</div>
                 </div>

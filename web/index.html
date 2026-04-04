@@ -448,24 +448,10 @@
                 }));
                 renderWorkers(workerList);
 
-                // Blocks - try to get from first miner if available
-                const minersRes = await fetch(API + '/miners?limit=1');
-                const miners = await minersRes.json();
-                if (miners && miners.length > 0) {
-                    const blocksRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address) + '/solo-blocks');
-                    const blocks = await blocksRes.json();
-                    renderBlocks(blocks);
-
-                    // Also get balance if miner exists in DB
-                    const minerRes = await fetch(API + '/miners/' + encodeURIComponent(miners[0].address));
-                    const miner = await minerRes.json();
-                    document.getElementById('balance').innerHTML =
-                        (miner.matureBalance || 0).toFixed(2) + ' <small>BCH2</small>';
-                    document.getElementById('balanceSub').textContent =
-                        '+ ' + (miner.immatureBalance || 0).toFixed(2) + ' BCH2 immature';
-                } else {
-                    renderBlocks([]);
-                }
+                // Fetch pool blocks (works without miners in DB)
+                const blocksRes = await fetch(API + '/blocks');
+                const blocksData = await blocksRes.json();
+                renderBlocks(blocksData.blocks || []);
             } catch (e) {
                 console.error('Failed to fetch miner:', e);
             }
@@ -488,7 +474,7 @@
                 <div class="worker-row">
                     <div class="worker-status ${w.online ? 'online' : 'offline'}"></div>
                     <div class="worker-name">${escapeHtml(w.name || 'default')}</div>
-                    <div class="worker-hashrate">${escapeHtml(formatHashrate((w.hashrate || 0) * 1e12))}</div>
+                    <div class="worker-hashrate">${escapeHtml(formatHashrate((w.hashrate5m || 0) * 1e12))}</div>
                 </div>
             `).join('');
         }
@@ -509,7 +495,7 @@
                 <div class="block-row">
                     <div class="block-height">${escapeHtml(String(b.height))}</div>
                     <div class="block-info">
-                        <div class="block-time">${escapeHtml(timeAgo(b.timestamp))}</div>
+                        <div class="block-time">${escapeHtml(timeAgo(b.time * 1000))}</div>
                     </div>
                     <div class="block-reward">${escapeHtml((b.reward || 50).toFixed(2))} BCH2</div>
                 </div>
