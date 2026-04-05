@@ -86,7 +86,7 @@ services:
       - DB_NAME=forgepool
       - REDIS_URL=redis://redis:6379
       - RPC_HOST=node
-      - RPC_PORT=8332
+      - RPC_PORT=8342
       - RPC_USER=forge
       - RPC_PASSWORD=${NODE_RPC_PASSWORD:-changeme}
       - POOL_NAME=${POOL_NAME:-My Forge Pool}
@@ -117,7 +117,7 @@ services:
     environment:
       - API_URL=http://api:8080
       - RPC_HOST=node
-      - RPC_PORT=8332
+      - RPC_PORT=8342
       - RPC_USER=forge
       - RPC_PASSWORD=${NODE_RPC_PASSWORD:-changeme}
       - POOL_ADDRESS=${POOL_ADDRESS:-}

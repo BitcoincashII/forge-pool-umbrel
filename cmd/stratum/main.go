@@ -540,7 +540,7 @@ func main() {
 		nodePort = config.GetInt("node.port")
 	}
 	if nodePort == 0 {
-		nodePort = 8332
+		nodePort = 8342
 	}
 	nodeSSL := config.GetBool("node.use_ssl")
 	protocol := "http"

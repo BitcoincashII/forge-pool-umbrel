@@ -208,7 +208,7 @@ func init() {
 	}
 	rpcPort := os.Getenv("RPC_PORT")
 	if rpcPort == "" {
-		rpcPort = "8332"
+		rpcPort = "8342"
 	}
 	rpcURL = os.Getenv("RPC_URL")
 	if rpcURL == "" {

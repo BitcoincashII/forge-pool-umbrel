@@ -19,7 +19,7 @@ stratum:
 
 node:
   host: "node"
-  port: 8332
+  port: 8342
   use_ssl: false
 
 pool:

@@ -30,7 +30,7 @@ RUN set -eux; \
 
 RUN mkdir -p /root/.bch2
 
-EXPOSE 8332 8333
+EXPOSE 8342 8339
 
 ENTRYPOINT ["bitcoincashIId"]
 CMD ["-printtoconsole", "-prune=1000"]
