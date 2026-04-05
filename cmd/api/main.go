@@ -470,6 +470,11 @@ pool_uptime_seconds %.0f
 		return c.Status(503).JSON(health)
 	})
 
+	// Favicon - return empty to prevent 404 spam in logs
+	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
+		return c.SendStatus(204)
+	})
+
 	// Static HTML pages
 	app.Get("/settings", func(c *fiber.Ctx) error {
 		return c.SendFile("./web/dist/settings.html")
