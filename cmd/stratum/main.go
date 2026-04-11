@@ -26,6 +26,7 @@ import (
 	"github.com/bch2/forge-pool/internal/stats"
 	"github.com/bch2/forge-pool/internal/stratum"
 	"github.com/bch2/forge-pool/internal/stratumv2"
+	"github.com/go-zeromq/zmq4"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -56,6 +57,9 @@ var (
 
 	// Shutdown channel for graceful termination
 	shutdownCh        = make(chan struct{})
+
+	// ZMQ block notification channel for instant block detection
+	zmqBlockCh        = make(chan string, 10)
 
 	// Security: Payout mutex to prevent concurrent payout processing per miner
 	payoutMu          sync.Mutex
@@ -461,6 +465,74 @@ func sendWebhookAlert(event string, data map[string]interface{}) {
 	}
 }
 
+// startZMQListener subscribes to ZMQ block notifications for instant block detection
+// This reduces orphan rate by getting new block notifications in milliseconds vs 1-second polling
+func startZMQListener(zmqEndpoint string, logger *zap.Logger) {
+	ctx := context.Background()
+
+	for {
+		select {
+		case <-shutdownCh:
+			logger.Info("ZMQ listener shutting down")
+			return
+		default:
+		}
+
+		sub := zmq4.NewSub(ctx)
+		if err := sub.Dial(zmqEndpoint); err != nil {
+			logger.Warn("Failed to connect to ZMQ endpoint, retrying in 5s",
+				zap.String("endpoint", zmqEndpoint),
+				zap.Error(err))
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		// Subscribe to hashblock topic
+		if err := sub.SetOption(zmq4.OptionSubscribe, "hashblock"); err != nil {
+			logger.Error("Failed to subscribe to hashblock topic", zap.Error(err))
+			sub.Close()
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		logger.Info("✅ ZMQ block notifications connected",
+			zap.String("endpoint", zmqEndpoint))
+
+		for {
+			select {
+			case <-shutdownCh:
+				sub.Close()
+				return
+			default:
+			}
+
+			msg, err := sub.Recv()
+			if err != nil {
+				logger.Warn("ZMQ receive error, reconnecting", zap.Error(err))
+				sub.Close()
+				break
+			}
+
+			// ZMQ message format: [topic, blockhash, sequence]
+			if len(msg.Frames) >= 2 {
+				topic := string(msg.Frames[0])
+				if topic == "hashblock" {
+					blockHash := hex.EncodeToString(msg.Frames[1])
+					logger.Info("⚡ ZMQ block notification received",
+						zap.String("hash", blockHash))
+
+					// Non-blocking send to trigger immediate job update
+					select {
+					case zmqBlockCh <- blockHash:
+					default:
+						// Channel full, job loop will pick it up on next tick
+					}
+				}
+			}
+		}
+	}
+}
+
 func main() {
 	configPath := flag.String("config", "configs/config.yaml", "Path to config file")
 	flag.Parse()
@@ -701,11 +773,19 @@ func main() {
 	go startStatsServer()
 	logger.Info("✅ Stratum server running", zap.Int("port", serverConfig.Port))
 
+	// Start ZMQ block notification listener for instant block detection
+	zmqEndpoint := os.Getenv("ZMQ_ENDPOINT")
+	if zmqEndpoint == "" {
+		zmqEndpoint = "tcp://node:28332"
+	}
+	go startZMQListener(zmqEndpoint, logger)
+
 	// Job broadcast loop
 	// Miners expect periodic job updates to confirm pool is alive
 	// Send new jobs on:
-	//   1. New block height (CleanJobs=true) - immediately
-	//   2. Periodic ntime update (CleanJobs=false) - every 30 seconds
+	//   1. New block detected via ZMQ (CleanJobs=true) - instant
+	//   2. New block height via polling (CleanJobs=true) - fallback
+	//   3. Periodic ntime update (CleanJobs=false) - every 15 seconds
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
@@ -717,10 +797,15 @@ func main() {
 		var lastStatusLog time.Time
 
 		for {
+			var zmqTriggered bool
 			select {
 			case <-shutdownCh:
 				logger.Info("Job broadcast loop shutting down")
 				return
+			case blockHash := <-zmqBlockCh:
+				// ZMQ notification - immediate block template fetch
+				logger.Info("⚡ ZMQ triggered job refresh", zap.String("block_hash", blockHash))
+				zmqTriggered = true
 			case <-ticker.C:
 				// Periodic status log every 60 seconds
 				if time.Since(lastStatusLog) >= 60*time.Second {
@@ -860,9 +945,14 @@ func main() {
 					}
 
 					if isNewBlock {
+						source := "polling"
+						if zmqTriggered {
+							source = "ZMQ"
+						}
 						logger.Info("📢 New block job broadcast",
 							zap.Int64("height", template.Height),
-							zap.String("job_id", job.ID))
+							zap.String("job_id", job.ID),
+							zap.String("source", source))
 					} else {
 						logger.Debug("📢 Periodic job update",
 							zap.Int64("height", template.Height),

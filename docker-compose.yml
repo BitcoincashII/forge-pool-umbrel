@@ -23,6 +23,10 @@ services:
       - -rpcallowip=0.0.0.0/0
       - -rpcuser=forge
       - -rpcpassword=${NODE_RPC_PASSWORD:-changeme}
+      - -zmqpubhashblock=tcp://0.0.0.0:28332
+      - -zmqpubrawblock=tcp://0.0.0.0:28332
+    expose:
+      - "28332"
     networks:
       - forge_network
     healthcheck:
@@ -122,6 +126,7 @@ services:
       - RPC_PASSWORD=${NODE_RPC_PASSWORD:-changeme}
       - POOL_ADDRESS=${POOL_ADDRESS:-}
       - POOL_FEE=${POOL_FEE:-1.0}
+      - ZMQ_ENDPOINT=tcp://node:28332
     networks:
       - forge_network
     healthcheck:
