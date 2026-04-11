@@ -30,7 +30,10 @@ RUN set -eux; \
 
 RUN mkdir -p /root/.bch2
 
-EXPOSE 8342 8339
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["bitcoincashIId"]
+EXPOSE 8342 8339 28332
+
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["-printtoconsole", "-prune=1000"]
