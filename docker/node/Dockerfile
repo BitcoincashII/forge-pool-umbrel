@@ -1,6 +1,6 @@
 FROM ubuntu:24.04
 
-ARG BCH2_VERSION=27.0.0
+ARG BCH2_VERSION=27.0.1
 ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y \
