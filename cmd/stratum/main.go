@@ -40,6 +40,7 @@ var (
 	jobHistoryOrder   []string                       // Track insertion order for FIFO cleanup
 	jobHistoryMu      sync.RWMutex
 	rpcURL            string
+	walletRPCURL      string // RPC URL with wallet path for sendtoaddress
 	rpcUser           string
 	rpcPass           string
 	networkDifficulty float64 = 1.0
@@ -112,6 +113,7 @@ func startPayoutProcessor() {
 
 	// Use global rpcURL configured from config file
 	nodeURL := rpcURL
+	payoutURL := walletRPCURL // Use wallet-specific URL for payouts
 
 	// Track failed payouts for retry (address -> retry count)
 	failedPayouts := make(map[string]int)
@@ -185,8 +187,8 @@ func startPayoutProcessor() {
 				// Round to 8 decimal places to avoid RPC issues
 				payAmount = math.Round(payAmount*1e8) / 1e8
 
-				// Create and send transaction with retry
-				txid, err := sendPayoutWithRetry(nodeURL, address, payAmount, 3)
+				// Create and send transaction with retry (use wallet-specific URL)
+				txid, err := sendPayoutWithRetry(payoutURL, address, payAmount, 3)
 				if err != nil {
 					failedPayouts[address]++
 					log.Printf("Payout failed for %s (amount: %.8f, attempt %d/%d): %v",
@@ -620,7 +622,8 @@ func main() {
 		protocol = "https"
 	}
 	rpcURL = fmt.Sprintf("%s://%s:%d", protocol, nodeHost, nodePort)
-	logger.Info("RPC URL configured", zap.String("url", rpcURL))
+	walletRPCURL = fmt.Sprintf("%s://%s:%d/wallet/main%%2Fpool", protocol, nodeHost, nodePort)
+	logger.Info("RPC URL configured", zap.String("url", rpcURL), zap.String("wallet_url", walletRPCURL))
 
 	rpcUser, rpcPass = getRPCCredentials()
 
@@ -1625,7 +1628,7 @@ func startStatsServer() {
 			if payAmount > 1000 {
 				payAmount = 1000
 			}
-			txid, err := sendPayout(rpcURL, minerID, payAmount)
+			txid, err := sendPayout(walletRPCURL, minerID, payAmount)
 			if err != nil {
 				// Revert the pending payout on failure
 				stats.RevertPendingPayout(pendingTxid)
