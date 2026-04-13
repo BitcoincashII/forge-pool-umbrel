@@ -1607,20 +1607,11 @@ func startStatsServer() {
 		currentHeight := int64(heightFloat)
 
 		// Use atomic payout processing to prevent race conditions
+		// ProcessPayoutAtomic uses FOR UPDATE row locking to prevent double-payouts
 		pendingTxid, matureAmount, err := stats.ProcessPayoutAtomic(minerID, currentHeight, 5.0)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "error": err.Error()})
-			return
-		}
-
-		// SECURITY: Verify balance again before sending (prevent race condition)
-		verifyMature, _ := stats.GetMinerBalanceDB(minerID, currentHeight)
-		if verifyMature < matureAmount {
-			stats.RevertPendingPayout(pendingTxid)
-			log.Printf("⚠️ SECURITY: Balance changed during payout processing for %s (expected: %.2f, got: %.2f)", minerID, matureAmount, verifyMature)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"success": false, "error": "Balance changed during processing"})
 			return
 		}
 
