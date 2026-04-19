@@ -1139,9 +1139,10 @@ func getMinerSettingsAPI(c *fiber.Ctx) error {
 	settingsMu.RUnlock()
 	
 	if !exists {
+		// Default to solo mode for solo-only pools
 		return c.JSON(fiber.Map{
 			"exists":      false,
-			"solo_mining": false,
+			"solo_mining": true,
 			"manual_diff": 0.0,
 			"vardiff":     true,
 		})

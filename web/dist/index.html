@@ -338,7 +338,7 @@
         </div>
     </div>
 
-    <div class="section">
+    <div class="section" id="blocks">
         <div class="section-header">
             Recent Blocks <span class="count" id="blockCount">0</span>
         </div>
@@ -361,7 +361,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             Settings
         </a>
-        <a href="#blocks" class="nav-item">
+        <a href="/blocks" class="nav-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             Blocks
         </a>
@@ -372,19 +372,22 @@
         let poolAddress = '';
 
         function formatHashrate(h) {
+            if (h >= 1e18) return (h / 1e18).toFixed(2) + ' EH/s';
             if (h >= 1e15) return (h / 1e15).toFixed(2) + ' PH/s';
             if (h >= 1e12) return (h / 1e12).toFixed(2) + ' TH/s';
             if (h >= 1e9) return (h / 1e9).toFixed(2) + ' GH/s';
             if (h >= 1e6) return (h / 1e6).toFixed(2) + ' MH/s';
+            if (h >= 1e3) return (h / 1e3).toFixed(2) + ' KH/s';
             return h.toFixed(0) + ' H/s';
         }
 
         function formatNumber(n) {
+            if (n >= 1e15) return (n / 1e15).toFixed(2) + 'P';
             if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
             if (n >= 1e9) return (n / 1e9).toFixed(2) + 'G';
             if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
             if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-            return n.toString();
+            return n.toFixed(0);
         }
 
         function timeAgo(date) {
