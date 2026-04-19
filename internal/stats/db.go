@@ -103,11 +103,14 @@ func createTablesIfNotExist() error {
 			miner_address VARCHAR(255),
 			worker_name VARCHAR(255),
 			reward NUMERIC(20,8) DEFAULT 50,
+			status VARCHAR(20) DEFAULT 'confirmed',
 			is_solo BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMP DEFAULT NOW()
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_blocks_height ON blocks(height)`,
 		`CREATE INDEX IF NOT EXISTS idx_blocks_miner ON blocks(miner_address)`,
+		// Migration: add status column to existing blocks tables
+		`ALTER TABLE blocks ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'confirmed'`,
 		`CREATE TABLE IF NOT EXISTS shares (
 			id BIGSERIAL PRIMARY KEY,
 			miner_address VARCHAR(255) NOT NULL,
@@ -188,7 +191,7 @@ func SaveBlockDBWithSolo(minerID string, height int64, hash string, reward float
 	_, err := db.Exec(`
 		INSERT INTO blocks (height, hash, miner_address, reward, is_solo, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (height) DO NOTHING`,
+		ON CONFLICT (hash) DO NOTHING`,
 		height, hash, minerID, reward, isSolo, time.Now())
 	return err
 }
@@ -215,7 +218,7 @@ func SavePayoutAtomicWithSolo(minerID string, blockHeight int64, amount float64,
 	_, err = tx.Exec(`
 		INSERT INTO blocks (height, hash, miner_address, reward, is_solo, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (height) DO NOTHING`,
+		ON CONFLICT (hash) DO NOTHING`,
 		blockHeight, blockHash, minerID, 50.0, isSolo, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to insert block: %w", err)
