@@ -4,7 +4,7 @@ name: Forge Pool
 tagline: Self-hosted BCH2 mining pool
 icon: https://hashforge.bch2.org/logo.png
 category: bitcoin
-version: "1.0.0"
+version: "1.1.1"
 port: 3080
 description: >-
   Run your own BCH2 mining pool with a single click. Forge Pool includes
@@ -29,11 +29,10 @@ gallery:
   - https://hashforge.bch2.org/screenshots/blocks.png
 
 releaseNotes: >-
-  Initial Umbrel release featuring:
-  - One-click installation
-  - Pruned node by default (~100MB)
-  - Auto-configuration
-  - Built-in stratum on port 3333
+  Bug fix release:
+  - Fix blocks not being saved to database
+  - Fix balance/payouts not displaying
+  - Add missing status column to blocks table
 
 dependencies: []
 
